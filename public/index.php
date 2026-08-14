@@ -18,9 +18,19 @@ if ($events) {
     }
 }
 
-$pageTitle = 'Lighting Technical Data';
-$pageDescription = 'Lighting technical data, standards, and design guides from Short Circuit Company.';
+$pageTitle = 'Lighting Technical Data & Standards';
+$pageDescription = 'Lighting technical data, CRI, CCT, lux, UGR, EN 12464-1, and design guides from Short Circuit Company.';
 $pageCanonical = publicSiteUrl();
+$pageJsonLd = [[
+    '@type' => 'WebPage',
+    '@id' => publicSiteUrl() . '#webpage',
+    'url' => publicSiteUrl(),
+    'name' => 'Lighting Technical Data & Standards Blog',
+    'description' => $pageDescription,
+    'isPartOf' => ['@id' => publicSiteUrl() . '#website'],
+    'about' => ['@id' => publicSiteUrl() . '#organization'],
+    'inLanguage' => 'en',
+]];
 include __DIR__ . '/partials_header.php';
 ?>
 

@@ -4,17 +4,22 @@
 /** @var string|null $pageCanonical */
 /** @var string|null $pageOgImage */
 /** @var string|null $pageOgType */
+/** @var string|null $pageRobots */
+/** @var array|null $pageJsonLd */
 require_once __DIR__ . '/../includes/auth_user.php';
+require_once __DIR__ . '/../includes/seo.php';
 $navUser = currentUser();
 $navUserFull = $navUser ? currentUserFull() : null;
 $navCanModerate = $navUserFull && roleCan($navUserFull['role'], 'can_moderate_topics');
 
-$ogTitle = ($pageTitle ?? 'Lighting Technical Data') . ' — Short Circuit Company';
-$ogDescription = $pageDescription ?? 'Lighting technical data, standards, and design guides from Short Circuit Company.';
+$ogTitle = seoFullTitle($pageTitle ?? 'Lighting Technical Data');
+$ogDescription = $pageDescription ?? seoDefaultDescription();
 $ogImagePng = $pageOgImage ?? defaultOgImageUrl();
 $ogImageSvg = defaultLogoUrl();
 $ogUrl = $pageCanonical ?? publicSiteUrl();
 $ogType = $pageOgType ?? 'website';
+$robots = $pageRobots ?? 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+$jsonLdNodes = is_array($pageJsonLd ?? null) ? $pageJsonLd : [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -26,8 +31,13 @@ $ogType = $pageOgType ?? 'website';
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="<?= e($ogImagePng) ?>">
 <meta name="theme-color" content="#eb1b26">
+<meta name="robots" content="<?= e($robots) ?>">
+<meta name="author" content="Short Circuit Company">
 <meta name="description" content="<?= e($ogDescription) ?>">
 <link rel="canonical" href="<?= e($ogUrl) ?>">
+<link rel="alternate" hreflang="en" href="<?= e($ogUrl) ?>">
+<link rel="alternate" hreflang="x-default" href="<?= e($ogUrl) ?>">
+<link rel="sitemap" type="application/xml" title="Sitemap" href="<?= e(publicSiteUrl('sitemap.xml')) ?>">
 
 <meta property="og:type" content="<?= e($ogType) ?>">
 <meta property="og:site_name" content="Short Circuit Company">
@@ -41,10 +51,11 @@ $ogType = $pageOgType ?? 'website';
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Short Circuit Company">
-<meta property="og:image" content="<?= e($ogImageSvg) ?>">
-<meta property="og:image:type" content="image/svg+xml">
 
 <meta name="twitter:card" content="summary_large_image">
+<?php $twitterHandle = seoTwitterHandle(); if ($twitterHandle !== ''): ?>
+<meta name="twitter:site" content="<?= e($twitterHandle) ?>">
+<?php endif; ?>
 <meta name="twitter:title" content="<?= e($ogTitle) ?>">
 <meta name="twitter:description" content="<?= e($ogDescription) ?>">
 <meta name="twitter:image" content="<?= e($ogImagePng) ?>">
@@ -56,14 +67,8 @@ $ogType = $pageOgType ?? 'website';
 <meta itemprop="description" content="<?= e($ogDescription) ?>">
 <meta itemprop="image" content="<?= e($ogImagePng) ?>">
 
-<script type="application/ld+json"><?= json_encode([
-    '@context' => 'https://schema.org',
-    '@type' => 'Organization',
-    'name' => 'Short Circuit Company',
-    'url' => publicSiteUrl(),
-    'logo' => $ogImageSvg,
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
-
+<script type="application/ld+json"><?= seoJsonLd($jsonLdNodes) ?></script>
+<?= seoMarketingHeadHtml() ?>
 <link rel="stylesheet" href="assets/css/site.css">
 </head>
 <body>

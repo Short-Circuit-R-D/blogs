@@ -75,6 +75,19 @@ define('SMTP_DEBUG', FALSE);       // true temporarily to print the SMTP convers
 define('SC_LOGIN_API_URL', '');    // e.g. 'https://shortcircuit.company/api/staff-login'
 define('SC_LOGIN_API_KEY', '');    // optional Bearer / API key header
 
+// SEO / marketing tags — set in .env; empty values are not printed in the page.
+define('GTM_ID', trim((string)($_ENV['GTM_ID'] ?? '')));
+define('GA4_MEASUREMENT_ID', trim((string)($_ENV['GA4_MEASUREMENT_ID'] ?? '')));
+define('GOOGLE_SITE_VERIFICATION', trim((string)($_ENV['GOOGLE_SITE_VERIFICATION'] ?? '')));
+define('BING_SITE_VERIFICATION', trim((string)($_ENV['BING_SITE_VERIFICATION'] ?? '')));
+define('FB_PIXEL_ID', trim((string)($_ENV['FB_PIXEL_ID'] ?? '')));
+define('FACEBOOK_DOMAIN_VERIFICATION', trim((string)($_ENV['FACEBOOK_DOMAIN_VERIFICATION'] ?? '')));
+define('SOCIAL_FACEBOOK', trim((string)($_ENV['SOCIAL_FACEBOOK'] ?? '')));
+define('SOCIAL_LINKEDIN', trim((string)($_ENV['SOCIAL_LINKEDIN'] ?? '')));
+define('SOCIAL_INSTAGRAM', trim((string)($_ENV['SOCIAL_INSTAGRAM'] ?? '')));
+define('SOCIAL_X', trim((string)($_ENV['SOCIAL_X'] ?? '')));
+define('SOCIAL_YOUTUBE', trim((string)($_ENV['SOCIAL_YOUTUBE'] ?? '')));
+
 // Composer autoload (PHPMailer and any other future dependency)
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';

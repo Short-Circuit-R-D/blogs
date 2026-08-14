@@ -18,7 +18,10 @@ if ($type === 'articles') {
 $topics         = getArticleTopics();
 $followedTopics = currentUser() ? getUserSubscribedTopics((int)currentUser()['id']) : [];
 
-$pageTitle = $q !== '' ? 'Search: ' . $q : 'Search';
+$pageTitle = $q !== '' ? 'Search lighting guides: ' . $q : 'Search Lighting Guides';
+$pageDescription = 'Search Short Circuit lighting articles, parameters, and standards guides.';
+$pageCanonical = publicSiteUrl('search');
+$pageRobots = $q !== '' ? 'noindex, follow' : 'index, follow';
 include __DIR__ . '/partials_header.php';
 ?>
 

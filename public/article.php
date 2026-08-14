@@ -42,12 +42,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'comme
 }
 
 $comments = getArticleComments((int)$article['id']);
+require_once __DIR__ . '/../includes/seo.php';
 
 $pageTitle = $article['title'];
-$pageDescription = $article['excerpt'] ?: 'Lighting technical guide from Short Circuit Company.';
+$pageDescription = $article['excerpt'] ?: seoDefaultDescription();
 $pageOgType = 'article';
 $pageCanonical = articlePermalink($article['slug']);
 $pageOgImage = !empty($article['image_url']) ? $article['image_url'] : defaultOgImageUrl();
+$pageJsonLd = [
+    seoBreadcrumbList([
+        ['name' => 'Home', 'url' => publicSiteUrl()],
+        ['name' => 'Articles', 'url' => publicSiteUrl('articles')],
+        ['name' => $article['title'], 'url' => $pageCanonical],
+    ]),
+    [
+        '@type' => 'Article',
+        'headline' => $article['title'],
+        'description' => $pageDescription,
+        'image' => $pageOgImage,
+        'datePublished' => date('c', strtotime($article['created_at'] ?? 'now')),
+        'dateModified' => date('c', strtotime($article['updated_at'] ?? $article['created_at'] ?? 'now')),
+        'mainEntityOfPage' => $pageCanonical,
+        'author' => [
+            '@type' => 'Organization',
+            'name' => 'Short Circuit Company',
+            'url' => publicSiteUrl(),
+        ],
+        'publisher' => [
+            '@type' => 'Organization',
+            'name' => 'Short Circuit Company',
+            'logo' => ['@type' => 'ImageObject', 'url' => defaultLogoUrl()],
+        ],
+        'articleSection' => $article['tag'] ?: 'Lighting',
+        'inLanguage' => 'en',
+    ],
+];
 include __DIR__ . '/partials_header.php';
 ?>
 

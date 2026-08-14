@@ -4,6 +4,12 @@
     <p>© <?= date('Y') ?> Short Circuit Company — Lighting Standards Reference</p>
   </div>
 </div>
+<?php
+if (!function_exists('seoMarketingBodyHtml')) {
+    require_once __DIR__ . '/../includes/seo.php';
+}
+echo seoMarketingBodyHtml();
+?>
 <script src="assets/js/site.js"></script>
 </body>
 </html>

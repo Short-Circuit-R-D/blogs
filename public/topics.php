@@ -32,7 +32,20 @@ $totalPages = max(1, (int)ceil($total / $perPage));
 
 $categories = getDiscussionCategories();
 
-$pageTitle = 'Community Topics';
+$pageTitle = $category !== '' ? $category . ' Lighting Topics' : 'Lighting Community Topics';
+$pageDescription = 'Community lighting topics from engineers, consultants, and educators — discussed and moderated on the Short Circuit blog.';
+$pageCanonical = $category !== ''
+    ? publicSiteUrl('topics?category=' . rawurlencode($category))
+    : publicSiteUrl('topics');
+$pageRobots = $page > 1 ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+$pageJsonLd = [[
+    '@type' => 'CollectionPage',
+    'name' => $pageTitle,
+    'url' => $pageCanonical,
+    'description' => $pageDescription,
+    'isPartOf' => ['@id' => publicSiteUrl() . '#website'],
+    'inLanguage' => 'en',
+]];
 include __DIR__ . '/partials_header.php';
 ?>
 <div class="wrap section" style="border-top:none;">

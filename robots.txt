@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /public/
+Disallow: /includes/
+Disallow: /storage/
+Disallow: /vendor/
+Disallow: /config.php
+Disallow: /login
+Disallow: /account
+Disallow: /sc-login
+Disallow: /staff-login
+Disallow: /moderate
+Disallow: /topic_new
+Disallow: /unsubscribe
+Disallow: /sc_security_log_printer.php
+
+Allow: /logo.svg
+Allow: /og-image.png
+Allow: /sitemap.xml
+
+Sitemap: https://blogs.shortcircuit.company/sitemap.xml

@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Post a New Topic';
+$pageRobots = 'noindex, nofollow';
 include __DIR__ . '/partials_header.php';
 ?>
 <div class="wrap section auth-section" style="border-top:none;">

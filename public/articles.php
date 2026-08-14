@@ -26,9 +26,24 @@ $topics         = getArticleTopics();
 $followedTopics = currentUser() ? getUserSubscribedTopics((int)currentUser()['id']) : [];
 $hasMore        = $result['page'] < $result['totalPages'];
 
-$pageTitle = 'All Articles';
-$pageDescription = 'Every lighting parameter, standard breakdown, and design guide in one place.';
-$pageCanonical = publicSiteUrl('articles');
+$pageTitle = $topic !== ''
+    ? $topic . ' Lighting Guides'
+    : 'Lighting Articles, Parameters & Standards Guides';
+$pageDescription = $topic !== ''
+    ? 'Lighting articles and technical guides about ' . $topic . ' from Short Circuit Company.'
+    : 'Browse lighting parameter explainers, EN 12464-1 guides, CRI, CCT, lux, UGR, and design articles from Short Circuit Company.';
+$pageCanonical = $topic !== ''
+    ? publicSiteUrl('articles?topic=' . rawurlencode($topic))
+    : publicSiteUrl('articles');
+$pageRobots = $q !== '' ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+$pageJsonLd = [[
+    '@type' => 'CollectionPage',
+    'name' => $pageTitle,
+    'url' => $pageCanonical,
+    'description' => $pageDescription,
+    'isPartOf' => ['@id' => publicSiteUrl() . '#website'],
+    'inLanguage' => 'en',
+]];
 include __DIR__ . '/partials_header.php';
 ?>
 

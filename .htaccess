@@ -24,6 +24,10 @@ Options -Indexes
   # Brand assets at the project root (Open Graph / favicon).
   RewriteRule ^(logo\.svg|og-image\.png)$ - [L]
 
+  # SEO files at the site root.
+  RewriteRule ^robots\.txt$ public/robots.php [L]
+  RewriteRule ^sitemap\.xml$ public/sitemap.php [L]
+
   # Requests already inside /public, /admin, or /uploads pass through untouched.
   RewriteRule ^(public|admin|uploads)(/|$) - [L]
 

@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Log In';
+$pageRobots = 'noindex, nofollow';
 include __DIR__ . '/partials_header.php';
 ?>
 <div class="wrap section auth-section" style="border-top:none;">

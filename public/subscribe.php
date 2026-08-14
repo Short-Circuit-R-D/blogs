@@ -132,8 +132,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = $mode === 'signup' ? 'Create Account' : 'Subscribe';
-$pageDescription = 'Subscribe to the Short Circuit lighting blog or create an account.';
+$pageTitle = $mode === 'signup' ? 'Create a Lighting Blog Account' : 'Subscribe to Lighting Guides';
+$pageDescription = 'Subscribe to the Short Circuit lighting blog or create an account for new-guide alerts.';
 $pageCanonical = publicSiteUrl($mode === 'signup' ? 'subscribe?mode=signup' : 'subscribe');
 include __DIR__ . '/partials_header.php';
 ?>

@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Login — Lighting CMS</title>
+<meta name="robots" content="noindex, nofollow">
 <base href="<?= e(appUrl()) ?>">
 <link rel="stylesheet" href="assets/admin.css">
 </head>

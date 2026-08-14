@@ -32,6 +32,7 @@ $pending = db()->query(
 )->fetchAll();
 
 $pageTitle = 'Moderate Topics';
+$pageRobots = 'noindex, nofollow';
 include __DIR__ . '/partials_header.php';
 ?>
 <div class="wrap section" style="border-top:none;">

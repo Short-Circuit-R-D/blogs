@@ -24,11 +24,40 @@ if ($topic['status'] !== 'approved' && !$isOwner) {
     }
 }
 
+require_once __DIR__ . '/../includes/seo.php';
 $pageTitle = $topic['title'];
 $plain = trim(preg_replace('/\s+/', ' ', strip_tags((string)$topic['body'])));
 $pageDescription = function_exists('mb_substr') ? mb_substr($plain, 0, 180) : substr($plain, 0, 180);
 $pageOgType = 'article';
 $pageCanonical = topicPermalink($topic['slug']);
+if ($topic['status'] !== 'approved') {
+    $pageRobots = 'noindex, nofollow';
+}
+$pageJsonLd = [
+    seoBreadcrumbList([
+        ['name' => 'Home', 'url' => publicSiteUrl()],
+        ['name' => 'Community', 'url' => publicSiteUrl('topics')],
+        ['name' => $topic['title'], 'url' => $pageCanonical],
+    ]),
+    [
+        '@type' => 'DiscussionForumPosting',
+        'headline' => $topic['title'],
+        'text' => $pageDescription,
+        'datePublished' => date('c', strtotime($topic['created_at'] ?? 'now')),
+        'dateModified' => date('c', strtotime($topic['updated_at'] ?? $topic['created_at'] ?? 'now')),
+        'url' => $pageCanonical,
+        'author' => [
+            '@type' => 'Person',
+            'name' => $topic['author_name'] ?: 'Short Circuit community',
+        ],
+        'publisher' => [
+            '@type' => 'Organization',
+            'name' => 'Short Circuit Company',
+            'url' => publicSiteUrl(),
+        ],
+        'inLanguage' => 'en',
+    ],
+];
 include __DIR__ . '/partials_header.php';
 ?>
 <div class="wrap section" style="border-top:none;max-width:760px;">
