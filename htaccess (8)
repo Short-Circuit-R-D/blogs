@@ -1,0 +1,46 @@
+# Short Circuit Company — Lighting Technical Data CMS
+# Place this file in the PROJECT ROOT (the same level as /public, /admin, /includes).
+#
+# Routes everything to /public EXCEPT /admin and /uploads, which are left
+# alone so they're reachable at yoursite.com/admin/... and
+# yoursite.com/uploads/... directly.
+# No RewriteBase is set on purpose: Apache auto-detects it from this
+# file's own location, so this works both at the domain root (production)
+# and in a subfolder (local XAMPP/WAMP testing) without any edits.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Requests already inside /public, /admin, or /uploads pass through untouched.
+  RewriteRule ^(public|admin|uploads)/ - [L]
+
+  # Don't rewrite anything that's already a real file or directory on disk
+  # (prevents internal-redirect loops that Apache reports as 500).
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Extensionless links (e.g. "/topics" instead of "/topics.php") —
+  # resolve against public/<path>.php before falling through to the
+  # generic rule below, so old or hand-typed links don't loop.
+  RewriteCond %{REQUEST_FILENAME}\.php -f
+  RewriteRule ^(.*)$ public/$1.php [L]
+
+  # Everything else is served from /public, preserving path + query string.
+  RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Never allow the config file to be served directly by URL.
+# Guarded for both modern (2.4+) and older Apache/LiteSpeed module sets,
+# since a bare "Require all denied" 500s on hosts without mod_authz_core.
+<IfModule mod_authz_core.c>
+  <FilesMatch "^config\.php$">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+  <FilesMatch "^config\.php$">
+    Order allow,deny
+    Deny from all
+  </FilesMatch>
+</IfModule>

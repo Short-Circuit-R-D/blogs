@@ -1,0 +1,60 @@
+# Short Circuit Company — Lighting Technical Data CMS
+# Place this file in the PROJECT ROOT (the same level as /public, /admin, /includes).
+#
+# Routes everything to /public EXCEPT /admin and /uploads, which are left
+# alone so they're reachable at yoursite.com/admin/... and
+# yoursite.com/uploads/... directly.
+# No RewriteBase is set on purpose: Apache auto-detects it from this
+# file's own location, so this works both at the domain root (production)
+# and in a subfolder (local XAMPP/WAMP testing) without any edits.
+
+DirectoryIndex public/index.php
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Requests already inside /public, /admin, or /uploads pass through untouched.
+  RewriteRule ^(public|admin|uploads)(/|$) - [L]
+
+  # Homepage: the project root is a real directory, so it must be rewritten
+  # before the "existing file/dir" skip or Apache will list the files instead.
+  RewriteRule ^$ public/index.php [L]
+
+  # Don't rewrite anything that's already a real file on disk
+  # (prevents internal-redirect loops that Apache reports as 500).
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  # Pretty article URLs: /article/colour-rendering → article.php?slug=…
+  RewriteRule ^article/([A-Za-z0-9_-]+)/?$ public/article.php?slug=$1 [L,QSA]
+
+  # Pretty community topic URLs: /topic/some-slug → topic.php?slug=…
+  RewriteRule ^topic/([A-Za-z0-9_-]+)/?$ public/topic.php?slug=$1 [L,QSA]
+
+  # Sign up / Subscribe aliases (the choice page).
+  RewriteRule ^(subscribe|signup)/?$ public/subscribe.php [L,QSA]
+  RewriteRule ^register/?$ public/subscribe.php?mode=signup [L,QSA]
+  RewriteRule ^(sc-login|staff-login)/?$ public/sc-login.php [L,QSA]
+
+  # Extensionless public pages: /articles → public/articles.php
+  RewriteRule ^([A-Za-z0-9_-]+)/?$ public/$1.php [L,QSA]
+
+  # Everything else is served from /public, preserving path + query string.
+  RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Never allow the config file to be served directly by URL.
+# Guarded for both modern (2.4+) and older Apache/LiteSpeed module sets,
+# since a bare "Require all denied" 500s on hosts without mod_authz_core.
+<IfModule mod_authz_core.c>
+  <FilesMatch "^config\.php$">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+  <FilesMatch "^config\.php$">
+    Order allow,deny
+    Deny from all
+  </FilesMatch>
+</IfModule>

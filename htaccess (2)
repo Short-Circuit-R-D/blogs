@@ -1,0 +1,45 @@
+# Short Circuit Company — Lighting Technical Data CMS
+# Place this file in the PROJECT ROOT (the same level as /public, /includes, /admin).
+#
+# It makes the site work correctly even when your hosting's document root
+# points at the project root instead of at /public — every request is
+# internally routed to /public, so URLs stay clean (yourdomain.com/article.php,
+# not yourdomain.com/public/article.php).
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Let requests that are already inside /public through untouched
+  # (covers direct links, and avoids double-rewriting).
+  RewriteRule ^public/ - [L]
+
+  # Serve real files/folders that happen to live outside /public as-is
+  # (e.g. a root-level favicon.ico or robots.txt), so this only catches
+  # everything else.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Everything else is served from /public, preserving the path and query string.
+  RewriteCond %{REQUEST_URI} !^/public/
+  RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# --------------------------------------------------------------------------
+# Alternative: if you'd rather have a visible redirect to /public/ instead
+# (URL bar changes to yourdomain.com/public/...), comment out the block
+# above and uncomment this one instead:
+#
+# <IfModule mod_rewrite.c>
+#   RewriteEngine On
+#   RewriteCond %{REQUEST_URI} !^/public/
+#   RewriteRule ^(.*)$ /public/$1 [R=301,L]
+# </IfModule>
+# --------------------------------------------------------------------------
+
+# Never allow the config file or includes to be served directly, even if
+# someone requests them by path.
+<FilesMatch "^(config\.php)$">
+  Require all denied
+</FilesMatch>

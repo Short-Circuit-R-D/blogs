@@ -1,0 +1,40 @@
+# Lighting CMS — admin pretty URLs
+# Lives in /admin so /admin/articles and /admin/article/12 resolve
+# without exposing .php. Assets and real files pass through.
+# No RewriteBase: Apache picks it up from this folder, so it works
+# at the domain root and in a subfolder (local XAMPP) without edits.
+
+DirectoryIndex dashboard.php login.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Real files (assets/admin.css) and directories pass through.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # /admin/article/new  → article_edit.php
+  # /admin/article/12   → article_edit.php?id=12
+  # Same pattern for user, topic, tool, standard, event.
+  RewriteRule ^(article|user|topic|tool|standard|event)/new/?$ $1_edit.php [L,QSA]
+  RewriteRule ^(article|user|topic|tool|standard|event)/([0-9]+)/?$ $1_edit.php?id=$2 [L,QSA]
+
+  # Extensionless pages: /admin/articles → articles.php
+  RewriteCond %{REQUEST_FILENAME}.php -f
+  RewriteRule ^([A-Za-z0-9_-]+)/?$ $1.php [L,QSA]
+</IfModule>
+
+Options -Indexes
+
+<IfModule mod_authz_core.c>
+  <FilesMatch "^\.">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+  <FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+  </FilesMatch>
+</IfModule>

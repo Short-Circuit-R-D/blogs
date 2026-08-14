@@ -1,0 +1,27 @@
+# Short Circuit Company — Lighting Technical Data CMS
+# Place this file in the PROJECT ROOT (the same level as /public, /includes, /admin).
+#
+# Routes every request to /public internally, so URLs stay clean.
+# No RewriteBase is set on purpose: Apache auto-detects it from this
+# file's own location, so this works whether the project sits at the
+# domain root (production) or in a subfolder like /lighting-cms/ (local
+# XAMPP/WAMP testing) without any edits.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Requests already inside /public pass through untouched.
+  RewriteRule ^public/ - [L]
+
+  # Everything else is served from /public, preserving path + query string.
+  RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Belt-and-braces: stop the bare root (or any folder with no index) from
+# ever showing a raw file listing if a rewrite doesn't fire for some reason.
+Options -Indexes
+
+# Never allow the config file to be served directly by URL.
+<FilesMatch "^(config\.php)$">
+    Require all denied
+</FilesMatch>

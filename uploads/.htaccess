@@ -1,0 +1,4 @@
+# Uploads should only ever serve images — never execute as PHP.
+<FilesMatch "\.(php|phtml|php\d)$">
+  Require all denied
+</FilesMatch>
