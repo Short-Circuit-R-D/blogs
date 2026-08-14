@@ -177,6 +177,9 @@ function ensureAdminUsersSchema(?PDO $pdo = null): void
         'company'    => 'ALTER TABLE admin_users ADD COLUMN company VARCHAR(160) DEFAULT NULL AFTER phone',
         'title'      => 'ALTER TABLE admin_users ADD COLUMN title VARCHAR(120) DEFAULT NULL AFTER company',
         'is_active'  => 'ALTER TABLE admin_users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER title',
+        'email_verified_at' => 'ALTER TABLE admin_users ADD COLUMN email_verified_at DATETIME DEFAULT NULL AFTER is_active',
+        'invite_token_hash' => 'ALTER TABLE admin_users ADD COLUMN invite_token_hash VARCHAR(64) DEFAULT NULL AFTER email_verified_at',
+        'invite_expires_at' => 'ALTER TABLE admin_users ADD COLUMN invite_expires_at DATETIME DEFAULT NULL AFTER invite_token_hash',
         'updated_at' => 'ALTER TABLE admin_users ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at',
     ];
     foreach ($cols as $name => $ddl) {
@@ -206,6 +209,12 @@ function ensureAdminUsersSchema(?PDO $pdo = null): void
              WHERE (email IS NULL OR email = '')
                AND username LIKE '%@%'"
         );
+        $pdo->exec(
+            "UPDATE admin_users
+             SET email_verified_at = COALESCE(email_verified_at, created_at)
+             WHERE email_verified_at IS NULL
+               AND (invite_token_hash IS NULL OR invite_token_hash = '')"
+        );
     } catch (\Throwable $e) {
         // Ignore backfill failures.
     }
@@ -220,7 +229,9 @@ function contactAdminRecipients(): array
     try {
         $rows = db()->query(
             "SELECT name, email FROM admin_users
-             WHERE is_active = 1 AND email IS NOT NULL AND email != ''"
+             WHERE is_active = 1
+               AND email_verified_at IS NOT NULL
+               AND email IS NOT NULL AND email != ''"
         )->fetchAll();
         foreach ($rows as $row) {
             $email = strtolower(trim((string)$row['email']));
@@ -287,12 +298,61 @@ function notifyContactAdmins(array $msg): int
         $body = '<p>' . $hello . '</p>'
             . '<p>A new message was submitted on the lighting blog Contact Us form.</p>'
             . $details;
-        $html = siteEmailLayout('Contact form — ' . $name, $body);
-        if (sendMail($admin['email'], $subject, $html, $email)) {
+        $html = siteEmailLayout('Contact form — ' . $name, $body, [
+            'preheader' => 'New Contact Us message from ' . $name . ' on the lighting blog.',
+        ]);
+        if (sendMail($admin['email'], $subject, $html, [
+            'reply_to' => $email,
+            'reply_name' => $name,
+            'category' => 'transactional',
+        ])) {
             $sent++;
         }
     }
     return $sent;
+}
+
+function adminInviteConfirmUrl(string $token): string
+{
+    return rtrim(PUBLIC_SITE_URL, '/') . '/admin/confirm?token=' . rawurlencode($token);
+}
+
+function issueAdminInviteToken(int $adminId): string
+{
+    $token = bin2hex(random_bytes(32));
+    $hash = hash('sha256', $token);
+    $expires = (new DateTimeImmutable('+72 hours'))->format('Y-m-d H:i:s');
+    db()->prepare(
+        'UPDATE admin_users
+         SET invite_token_hash = ?, invite_expires_at = ?, email_verified_at = NULL
+         WHERE id = ?'
+    )->execute([$hash, $expires, $adminId]);
+    return $token;
+}
+
+function sendAdminInviteEmail(array $admin, string $token, string $inviterName = ''): bool
+{
+    require_once __DIR__ . '/mailer.php';
+    $url = adminInviteConfirmUrl($token);
+    $hello = trim((string)($admin['name'] ?? '')) !== '' ? 'Hi ' . e($admin['name']) . ',' : 'Hi,';
+    $by = $inviterName !== '' ? ' by ' . e($inviterName) : '';
+    $body = '<p>' . $hello . '</p>'
+        . '<p>You were invited' . $by . ' to manage the Short Circuit Company lighting blog CMS.</p>'
+        . '<p>Use this one-time link to confirm your email and set your password. You cannot open the dashboard until you confirm.</p>'
+        . emailButton($url, 'Confirm CMS access')
+        . '<p>The link expires in 72 hours and works only once. If you were not expecting this invite, you can ignore this email.</p>';
+    return sendMail(
+        (string)$admin['email'],
+        'Confirm your Short Circuit CMS access',
+        siteEmailLayout('Confirm your CMS access', $body, [
+            'preheader' => 'One-time link to activate your Short Circuit lighting CMS login.',
+        ])
+    );
+}
+
+function adminIsVerified(array $admin): bool
+{
+    return !empty($admin['email_verified_at']);
 }
 
 /**
@@ -792,7 +852,10 @@ function notifySubscribers(array $article): int
               . $rangesHtml
               . '<p style="margin-top:20px;"><a href="' . e($url) . '" style="display:inline-block;background:#eb1b26;color:#fff;padding:10px 18px;border-radius:4px;text-decoration:none;">Read it →</a></p>'
               . '<p style="font-size:11px;color:#999;">Don\'t want these emails? <a href="' . e($unsubUrl) . '">Unsubscribe</a>.</p>';
-        if (sendMail($u['email'], 'New guide: ' . $article['title'], siteEmailLayout('New Lighting Guide Published', $body))) {
+        if (sendMail($u['email'], 'New guide: ' . $article['title'], siteEmailLayout('New Lighting Guide Published', $body, [
+            'preheader' => $article['title'] . ' — new lighting guide from Short Circuit Company.',
+            'unsubscribe' => $unsubUrl,
+        ]), ['category' => 'marketing', 'unsubscribe' => $unsubUrl])) {
             $sent++;
         }
     }
@@ -904,7 +967,9 @@ function notifyTopicDecision(int $topicId, string $decision, ?string $reason = n
               . '<p>Your topic is now live on the Community page:</p>'
               . '<p style="font-size:17px;font-weight:bold;">' . e($row['title']) . '</p>'
               . '<p><a href="' . e($url) . '" style="display:inline-block;background:#eb1b26;color:#fff;padding:10px 18px;border-radius:4px;text-decoration:none;">View it →</a></p>';
-        return sendMail($row['email'], 'Your topic was accepted: ' . $row['title'], siteEmailLayout('Topic Accepted', $body));
+        return sendMail($row['email'], 'Your topic was accepted: ' . $row['title'], siteEmailLayout('Topic Accepted', $body, [
+            'preheader' => 'Your community topic is now live on the Short Circuit lighting blog.',
+        ]));
     }
 
     if ($decision === 'rejected') {
@@ -913,7 +978,9 @@ function notifyTopicDecision(int $topicId, string $decision, ?string $reason = n
               . '<p style="font-size:17px;font-weight:bold;">' . e($row['title']) . '</p>'
               . ($reason ? '<p><strong>Reason:</strong> ' . e($reason) . '</p>' : '')
               . '<p>You can edit and resubmit any time from your account page.</p>';
-        return sendMail($row['email'], 'Your topic needs changes: ' . $row['title'], siteEmailLayout('Topic Not Accepted', $body));
+        return sendMail($row['email'], 'Your topic needs changes: ' . $row['title'], siteEmailLayout('Topic Not Accepted', $body, [
+            'preheader' => 'An update on your community topic from Short Circuit Company.',
+        ]));
     }
 
     return false;

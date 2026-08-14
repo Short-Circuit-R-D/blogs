@@ -106,7 +106,7 @@ a.pill:hover{color:var(--sc-red);}
 .admin-form label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:var(--text);}
 .admin-form .hint{font-weight:400;color:var(--text-muted);font-size:12px;}
 .admin-form input[type=text],.admin-form input[type=password],.admin-form input[type=url],.admin-form input[type=number],
-.admin-form input[type=file],.admin-form select,.admin-form textarea{font-family:var(--font-body);font-size:14px;padding:9px 11px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);}
+.admin-form input[type=email],.admin-form input[type=file],.admin-form select,.admin-form textarea{font-family:var(--font-body);font-size:14px;padding:9px 11px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);}
 .admin-form textarea{resize:vertical;}
 .checkbox-label{flex-direction:row !important;align-items:center;gap:8px !important;}
 .checkbox-label input{width:auto;}

@@ -88,7 +88,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                       . '<p>You\'re subscribed to the Short Circuit lighting blog. We\'ll email you when a new guide is published.</p>'
                       . '<p>Want an account so you can follow topics and join discussions? '
                       . '<a href="' . e(publicSiteUrl('subscribe?mode=signup')) . '">Create one here</a>.</p>';
-                sendMail($email, 'You\'re subscribed to the lighting blog', siteEmailLayout('Subscribed', $body));
+                sendMail($email, 'You\'re subscribed to the lighting blog', siteEmailLayout('Subscribed', $body, [
+                    'preheader' => 'You will get Short Circuit lighting guides when they go live.',
+                    'unsubscribe' => publicSiteUrl('unsubscribe?token=' . urlencode($token)),
+                ]), ['category' => 'marketing', 'unsubscribe' => publicSiteUrl('unsubscribe?token=' . urlencode($token))]);
                 $success = 'You\'re subscribed. Check your inbox — we\'ll write when a new guide goes live.';
             }
             $name = $email = $phoneNumber = $profession = $professionOther = $company = '';
@@ -107,7 +110,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 startUserSession(['id' => (int)$existing['id'], 'name' => $name, 'email' => $email]);
                 $body = '<p>Hi ' . e($name) . ',</p><p>Your account is ready. You were already on the mailing list — you can now log in, follow topics, and join the discussion on each article.</p>';
-                sendMail($email, 'Welcome to Short Circuit Lighting Standards', siteEmailLayout('Welcome', $body));
+                $unsub = !empty($existing['unsubscribe_token']) ? publicSiteUrl('unsubscribe?token=' . urlencode($existing['unsubscribe_token'])) : '';
+                sendMail($email, 'Welcome to Short Circuit Lighting Standards', siteEmailLayout('Welcome', $body, [
+                    'preheader' => 'Your Short Circuit lighting blog account is ready.',
+                    'unsubscribe' => $unsub,
+                ]), $unsub !== '' ? ['category' => 'marketing', 'unsubscribe' => $unsub] : []);
                 redirect($_SESSION['post_login_redirect'] ?? 'account.php');
             } else {
                 $token = bin2hex(random_bytes(24));
@@ -125,7 +132,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $body = '<p>Hi ' . e($name) . ',</p><p>Your account is ready. '
                       . ($subscribeAlerts ? 'You\'re subscribed to new-guide email alerts — turn this off any time from your account page.' : 'You can turn on new-guide email alerts any time from your account page.')
                       . '</p>';
-                sendMail($email, 'Welcome to Short Circuit Lighting Standards', siteEmailLayout('Welcome', $body));
+                $unsub = publicSiteUrl('unsubscribe?token=' . urlencode($token));
+                sendMail($email, 'Welcome to Short Circuit Lighting Standards', siteEmailLayout('Welcome', $body, [
+                    'preheader' => 'Your Short Circuit lighting blog account is ready.',
+                    'unsubscribe' => $subscribeAlerts ? $unsub : '',
+                ]), $subscribeAlerts ? ['category' => 'marketing', 'unsubscribe' => $unsub] : []);
                 redirect($_SESSION['post_login_redirect'] ?? 'index.php');
             }
         }

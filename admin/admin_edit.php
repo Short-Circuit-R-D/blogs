@@ -13,6 +13,7 @@ $admin = [
     'title' => '',
     'is_active' => 1,
 ];
+$found = null;
 
 if ($id) {
     $stmt = db()->prepare('SELECT * FROM admin_users WHERE id = ?');
@@ -41,9 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($admin['username'] === '') $errors[] = 'Username is required.';
     if ($admin['name'] === '') $errors[] = 'Name is required.';
     if ($admin['email'] === '' || !filter_var($admin['email'], FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'A valid email is required (Contact Us messages are sent here).';
+        $errors[] = 'A valid email is required. The invite and Contact Us messages are sent here.';
     }
-    if ($isNew && strlen($password) < 8) $errors[] = 'Password must be at least 8 characters for a new admin.';
+    if (!$isNew && $password !== '' && strlen($password) < 8) {
+        $errors[] = 'New password must be at least 8 characters.';
+    }
 
     if (!$errors) {
         $dupUser = db()->prepare('SELECT id FROM admin_users WHERE username = ? AND id != ?');
@@ -62,18 +65,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = $admin['title'] !== '' ? $admin['title'] : null;
 
         if ($id) {
+            $emailChanged = strcasecmp((string)($found['email'] ?? ''), $admin['email']) !== 0;
             if ($password !== '') {
-                if (strlen($password) < 8) {
-                    $errors[] = 'New password must be at least 8 characters.';
-                } else {
-                    $stmt = $pdo->prepare(
-                        'UPDATE admin_users SET username=?, name=?, email=?, phone=?, company=?, title=?, is_active=?, password_hash=? WHERE id=?'
-                    );
-                    $stmt->execute([
-                        $admin['username'], $admin['name'], $admin['email'], $phone, $company, $title,
-                        $admin['is_active'], password_hash($password, PASSWORD_DEFAULT), $id,
-                    ]);
-                }
+                $stmt = $pdo->prepare(
+                    'UPDATE admin_users SET username=?, name=?, email=?, phone=?, company=?, title=?, is_active=?, password_hash=? WHERE id=?'
+                );
+                $stmt->execute([
+                    $admin['username'], $admin['name'], $admin['email'], $phone, $company, $title,
+                    $admin['is_active'], password_hash($password, PASSWORD_DEFAULT), $id,
+                ]);
             } else {
                 $stmt = $pdo->prepare(
                     'UPDATE admin_users SET username=?, name=?, email=?, phone=?, company=?, title=?, is_active=? WHERE id=?'
@@ -83,23 +83,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $admin['is_active'], $id,
                 ]);
             }
-            if (!$errors) {
-                if ($isSelf) {
-                    $_SESSION['admin']['username'] = $admin['username'];
-                    $_SESSION['admin']['name'] = $admin['name'];
-                    $_SESSION['admin']['email'] = $admin['email'];
-                }
-                redirect('admins.php');
+            if ($emailChanged && !$isSelf) {
+                $token = issueAdminInviteToken($id);
+                $inviter = currentAdmin();
+                sendAdminInviteEmail(
+                    ['name' => $admin['name'], 'email' => $admin['email']],
+                    $token,
+                    (string)(($inviter['name'] ?? '') !== '' ? $inviter['name'] : ($inviter['username'] ?? ''))
+                );
+                $_SESSION['admin_flash'] = 'Email changed. A new confirmation link was sent to ' . $admin['email'] . '. They cannot log in until they confirm.';
             }
+            if ($isSelf) {
+                $_SESSION['admin']['username'] = $admin['username'];
+                $_SESSION['admin']['name'] = $admin['name'];
+                $_SESSION['admin']['email'] = $admin['email'];
+            }
+            redirect('admins.php');
         } else {
             $stmt = $pdo->prepare(
-                'INSERT INTO admin_users (username, password_hash, name, email, phone, company, title, is_active)
-                 VALUES (?,?,?,?,?,?,?,?)'
+                'INSERT INTO admin_users (username, password_hash, name, email, phone, company, title, is_active, email_verified_at)
+                 VALUES (?,?,?,?,?,?,?,?,NULL)'
             );
             $stmt->execute([
-                $admin['username'], password_hash($password, PASSWORD_DEFAULT),
+                $admin['username'],
+                password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT),
                 $admin['name'], $admin['email'], $phone, $company, $title, $admin['is_active'],
             ]);
+            $newId = (int)$pdo->lastInsertId();
+            $token = issueAdminInviteToken($newId);
+            $inviter = currentAdmin();
+            $sent = sendAdminInviteEmail(
+                ['name' => $admin['name'], 'email' => $admin['email']],
+                $token,
+                (string)(($inviter['name'] ?? '') !== '' ? $inviter['name'] : ($inviter['username'] ?? ''))
+            );
+            $_SESSION['admin_flash'] = $sent
+                ? 'Invite sent to ' . $admin['email'] . '. They must confirm the one-time email link before they can open the dashboard.'
+                : 'Admin saved, but the invite email could not be sent. Use Resend invite.';
             redirect('admins.php');
         }
     }
@@ -120,7 +140,7 @@ include __DIR__ . '/partials_header.php';
     <label>Full name
       <input type="text" name="name" value="<?= e($admin['name'] ?? '') ?>" required>
     </label>
-    <label>Email <span class="hint">(receives Contact Us messages)</span>
+    <label>Email <span class="hint">(invite + Contact Us messages)</span>
       <input type="email" name="email" value="<?= e($admin['email'] ?? '') ?>" required>
     </label>
   </div>
@@ -129,9 +149,11 @@ include __DIR__ . '/partials_header.php';
     <label>Username <span class="hint">(CMS login)</span>
       <input type="text" name="username" value="<?= e($admin['username'] ?? '') ?>" required>
     </label>
-    <label><?= $isNew ? 'Password' : 'New password' ?> <span class="hint"><?= $isNew ? '(8+ characters)' : '(leave blank to keep current password)' ?></span>
+    <?php if (!$isNew): ?>
+    <label>New password <span class="hint">(leave blank to keep current password)</span>
       <input type="password" name="password" autocomplete="new-password">
     </label>
+    <?php endif; ?>
   </div>
 
   <div class="form-grid-2">
@@ -157,8 +179,12 @@ include __DIR__ . '/partials_header.php';
     </label>
   <?php endif; ?>
 
+<?php if ($isNew): ?>
+  <p class="hint">They will receive a one-time confirmation link and cannot open the dashboard until they confirm and set a password.</p>
+<?php endif; ?>
+
   <div class="form-actions">
-    <button type="submit" class="btn-primary">Save Admin</button>
+    <button type="submit" class="btn-primary"><?= $isNew ? 'Send invite' : 'Save Admin' ?></button>
     <a href="admins" class="btn-secondary">Cancel</a>
   </div>
 </form>

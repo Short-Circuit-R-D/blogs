@@ -12,13 +12,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     ensureAdminUsersSchema();
-    $stmt = db()->prepare('SELECT id, username, password_hash, name, email, is_active FROM admin_users WHERE username = ?');
+    $stmt = db()->prepare('SELECT id, username, password_hash, name, email, is_active, email_verified_at FROM admin_users WHERE username = ?');
     $stmt->execute([$username]);
     $user = $stmt->fetch();
 
     if ($user && password_verify($password, $user['password_hash']) && empty($user['is_active'])) {
         adminAuditLog('login_fail', $username, 'Deactivated CMS admin login');
         $error = 'This admin account has been deactivated.';
+    } elseif ($user && password_verify($password, $user['password_hash']) && empty($user['email_verified_at'])) {
+        adminAuditLog('login_fail', $username, 'Unconfirmed CMS admin login');
+        $error = 'This account must confirm the one-time link sent to its email before opening the dashboard.';
     } elseif ($user && password_verify($password, $user['password_hash'])) {
         session_regenerate_id(true);
         $_SESSION['admin'] = [
