@@ -18,10 +18,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($user && password_verify($password, $user['password_hash'])) {
         session_regenerate_id(true);
         $_SESSION['admin'] = ['id' => $user['id'], 'username' => $user['username']];
+        adminAuditLog('login_success', $user['username'], 'Admin signed in');
         redirect('dashboard.php');
     } else {
+        adminAuditLog('login_fail', $username !== '' ? $username : 'guest', 'Failed admin login');
         $error = 'Incorrect username or password.';
     }
+} else {
+    adminAuditLog('login_page_open', 'guest', 'Opened the admin login page');
 }
 ?>
 <!DOCTYPE html>

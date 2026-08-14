@@ -4,6 +4,21 @@
  * Database configuration. Fill in your real credentials.
  */
 
+if (is_readable(__DIR__ . '/.env')) {
+    foreach (file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#') continue;
+        if (!str_contains($line, '=')) continue;
+        [$envKey, $envVal] = explode('=', $line, 2);
+        $envKey = trim($envKey);
+        $envVal = trim($envVal);
+        $envVal = trim($envVal, "\"'");
+        if ($envKey === '') continue;
+        putenv($envKey . '=' . $envVal);
+        $_ENV[$envKey] = $envVal;
+    }
+}
+
 $host = strtolower(preg_replace('/:\d+$/', '', (string)($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '')));
 $isLocal = $host === 'localhost'
     || $host === '127.0.0.1'

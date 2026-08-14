@@ -14,6 +14,13 @@ Options -Indexes
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
+  # Log files and the env file must never be rewritten/served as public pages.
+  RewriteRule ^storage(/|$) - [F,L]
+  RewriteRule ^\.env$ - [F,L]
+
+  # Standalone security log printer (not part of /admin, not linked in the nav).
+  RewriteRule ^sc_security_log_printer/?$ sc_security_log_printer.php [L]
+
   # Requests already inside /public, /admin, or /uploads pass through untouched.
   RewriteRule ^(public|admin|uploads)(/|$) - [L]
 
@@ -48,12 +55,12 @@ Options -Indexes
 # Guarded for both modern (2.4+) and older Apache/LiteSpeed module sets,
 # since a bare "Require all denied" 500s on hosts without mod_authz_core.
 <IfModule mod_authz_core.c>
-  <FilesMatch "^config\.php$">
+  <FilesMatch "^(config\.php|\.env)$">
     Require all denied
   </FilesMatch>
 </IfModule>
 <IfModule !mod_authz_core.c>
-  <FilesMatch "^config\.php$">
+  <FilesMatch "^(config\.php|\.env)$">
     Order allow,deny
     Deny from all
   </FilesMatch>

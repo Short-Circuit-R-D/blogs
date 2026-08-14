@@ -217,6 +217,26 @@ CREATE TABLE IF NOT EXISTS event_images (
   FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Admin security audit (page opens + actions). Daily files in storage/logs/;
+-- log_file stores only the filename so the printer can join file + DB row.
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  log_file VARCHAR(80) NOT NULL,
+  occurred_at DATETIME NOT NULL,
+  account VARCHAR(60) NOT NULL DEFAULT 'guest',
+  action VARCHAR(60) NOT NULL,
+  page VARCHAR(190) NOT NULL DEFAULT '',
+  ip VARCHAR(45) NOT NULL DEFAULT '',
+  location VARCHAR(160) NOT NULL DEFAULT '',
+  device VARCHAR(180) NOT NULL DEFAULT '',
+  user_agent VARCHAR(400) NOT NULL DEFAULT '',
+  details TEXT,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_audit_occurred (occurred_at),
+  KEY idx_audit_account (account),
+  KEY idx_audit_file (log_file)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ---------------------------------------------------------------
 -- Seed data: the three LedEXPO events (no images yet — add via dashboard)
 -- ---------------------------------------------------------------
