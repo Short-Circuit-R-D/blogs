@@ -33,7 +33,7 @@ function appBase(): string
     if ($base !== null) return $base;
     $script = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
     $dir = rtrim(dirname($script), '/');
-    if (basename($dir) === 'public') {
+    if (in_array(basename($dir), ['public', 'api'], true)) {
         $dir = rtrim(dirname($dir), '/');
     }
     $base = ($dir === '/' || $dir === '.') ? '' : $dir;

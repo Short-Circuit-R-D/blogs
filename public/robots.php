@@ -7,6 +7,7 @@ $sitemap = publicSiteUrl('sitemap.xml');
 echo "User-agent: *\n";
 echo "Allow: /\n\n";
 echo "Disallow: /admin/\n";
+echo "Disallow: /api/\n";
 echo "Disallow: /public/\n";
 echo "Disallow: /includes/\n";
 echo "Disallow: /storage/\n";

@@ -21,6 +21,9 @@ Options -Indexes
   # Standalone security log printer (not part of /admin, not linked in the nav).
   RewriteRule ^sc_security_log_printer/?$ sc_security_log_printer.php [L]
 
+  # Versioned JSON API: /api/v1/...
+  RewriteRule ^api(/|$) - [L]
+
   # Brand assets at the project root (Open Graph / favicon).
   RewriteRule ^(logo\.svg|og-image\.png)$ - [L]
 
@@ -32,7 +35,7 @@ Options -Indexes
   RewriteRule ^sitemap-topics\.xml$ public/sitemap.php?type=topics [L,QSA]
 
   # Requests already inside /public, /admin, or /uploads pass through untouched.
-  RewriteRule ^(public|admin|uploads)(/|$) - [L]
+  RewriteRule ^(public|admin|uploads|api)(/|$) - [L]
 
   # Homepage: the project root is a real directory, so it must be rewritten
   # before the "existing file/dir" skip or Apache will list the files instead.

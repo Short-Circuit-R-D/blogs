@@ -88,6 +88,8 @@ define('SOCIAL_INSTAGRAM', trim((string)($_ENV['SOCIAL_INSTAGRAM'] ?? '')));
 define('SOCIAL_X', trim((string)($_ENV['SOCIAL_X'] ?? '')));
 define('SOCIAL_YOUTUBE', trim((string)($_ENV['SOCIAL_YOUTUBE'] ?? '')));
 
+define('API_TOKEN', trim((string)($_ENV['API_TOKEN'] ?? '')));
+
 // Composer autoload (PHPMailer and any other future dependency)
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';
