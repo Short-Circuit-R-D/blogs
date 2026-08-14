@@ -1,0 +1,8 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^robots\.txt$ robots.php [L]
+  RewriteRule ^sitemap\.xml$ sitemap.php?type=all [L,QSA]
+  RewriteRule ^sitemap-pages\.xml$ sitemap.php?type=pages [L,QSA]
+  RewriteRule ^sitemap-articles\.xml$ sitemap.php?type=articles [L,QSA]
+  RewriteRule ^sitemap-topics\.xml$ sitemap.php?type=topics [L,QSA]
+</IfModule>
