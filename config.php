@@ -40,6 +40,9 @@ if ($isLocal) {
     define('DB_CHARSET', 'utf8mb4');
 }
 
+// Public blog URL used in emails, Open Graph tags, and share links.
+define('PUBLIC_SITE_URL', 'https://blogs.shortcircuit.company');
+
 // Base URL of the site, no trailing slash. Used to build upload links.
 define('SITE_URL', 'https://shortcircuit.company/lightSCenter');
 

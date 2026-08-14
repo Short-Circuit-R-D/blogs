@@ -21,6 +21,9 @@ Options -Indexes
   # Standalone security log printer (not part of /admin, not linked in the nav).
   RewriteRule ^sc_security_log_printer/?$ sc_security_log_printer.php [L]
 
+  # Brand assets at the project root (Open Graph / favicon).
+  RewriteRule ^(logo\.svg|og-image\.png)$ - [L]
+
   # Requests already inside /public, /admin, or /uploads pass through untouched.
   RewriteRule ^(public|admin|uploads)(/|$) - [L]
 

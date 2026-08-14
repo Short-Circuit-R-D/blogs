@@ -27,6 +27,8 @@ $followedTopics = currentUser() ? getUserSubscribedTopics((int)currentUser()['id
 $hasMore        = $result['page'] < $result['totalPages'];
 
 $pageTitle = 'All Articles';
+$pageDescription = 'Every lighting parameter, standard breakdown, and design guide in one place.';
+$pageCanonical = publicSiteUrl('articles');
 include __DIR__ . '/partials_header.php';
 ?>
 

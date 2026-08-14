@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $body = '<p>Hi ' . e($name) . ',</p>'
                       . '<p>You\'re subscribed to the Short Circuit lighting blog. We\'ll email you when a new guide is published.</p>'
                       . '<p>Want an account so you can follow topics and join discussions? '
-                      . '<a href="' . e(rtrim(SITE_URL, '/') . '/subscribe?mode=signup') . '">Create one here</a>.</p>';
+                      . '<a href="' . e(publicSiteUrl('subscribe?mode=signup')) . '">Create one here</a>.</p>';
                 sendMail($email, 'You\'re subscribed to the lighting blog', siteEmailLayout('Subscribed', $body));
                 $success = 'You\'re subscribed. Check your inbox — we\'ll write when a new guide goes live.';
             }
@@ -133,6 +133,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = $mode === 'signup' ? 'Create Account' : 'Subscribe';
+$pageDescription = 'Subscribe to the Short Circuit lighting blog or create an account.';
+$pageCanonical = publicSiteUrl($mode === 'signup' ? 'subscribe?mode=signup' : 'subscribe');
 include __DIR__ . '/partials_header.php';
 ?>
 <div class="wrap section auth-section" style="border-top:none;">

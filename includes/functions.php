@@ -56,6 +56,34 @@ function articleUrl(string $slug): string
     return 'article/' . rawurlencode($slug);
 }
 
+/** Absolute public-blog URL (emails, Open Graph). Always https://blogs.shortcircuit.company/... */
+function publicSiteUrl(string $path = ''): string
+{
+    $base = rtrim(defined('PUBLIC_SITE_URL') ? PUBLIC_SITE_URL : SITE_URL, '/');
+    $path = ltrim($path, '/');
+    return $path === '' ? $base : $base . '/' . $path;
+}
+
+function articlePermalink(string $slug): string
+{
+    return publicSiteUrl('article/' . rawurlencode($slug));
+}
+
+function topicPermalink(string $slug): string
+{
+    return publicSiteUrl('topic/' . rawurlencode($slug));
+}
+
+function defaultLogoUrl(): string
+{
+    return publicSiteUrl('logo.svg');
+}
+
+function defaultOgImageUrl(): string
+{
+    return publicSiteUrl('og-image.png');
+}
+
 /**
  * Make sure newer front-end columns/tables exist on an already-running
  * database, so subscribe-only accounts and article comments work without
@@ -551,7 +579,7 @@ function notifySubscribers(array $article): int
     $stmt->execute([$article['id']]);
     $ranges = $stmt->fetchAll();
 
-    $url = rtrim(SITE_URL, '/') . '/public/article.php?slug=' . urlencode($article['slug']);
+    $url = articlePermalink($article['slug']);
 
     // --- Content blocks built once, reused for every recipient ---
 
@@ -595,7 +623,7 @@ function notifySubscribers(array $article): int
 
     $sent = 0;
     foreach ($users as $u) {
-        $unsubUrl = rtrim(SITE_URL, '/') . '/public/unsubscribe.php?token=' . urlencode($u['unsubscribe_token']);
+        $unsubUrl = publicSiteUrl('unsubscribe?token=' . urlencode($u['unsubscribe_token']));
         $body = '<p>Hi ' . e($u['name']) . ',</p>'
               . '<p>A new lighting guide just went live' . ($article['tag'] ? ' in <strong>' . e($article['tag']) . '</strong>' : '') . ':</p>'
               . $imageHtml
@@ -713,7 +741,7 @@ function notifyTopicDecision(int $topicId, string $decision, ?string $reason = n
     if (!$row) return false;
 
     if ($decision === 'approved') {
-        $url = rtrim(SITE_URL, '/') . '/public/topic.php?slug=' . urlencode($row['slug']);
+        $url = topicPermalink($row['slug']);
         $body = '<p>Hi ' . e($row['name']) . ',</p>'
               . '<p>Your topic is now live on the Community page:</p>'
               . '<p style="font-size:17px;font-weight:bold;">' . e($row['title']) . '</p>'

@@ -25,6 +25,10 @@ if ($topic['status'] !== 'approved' && !$isOwner) {
 }
 
 $pageTitle = $topic['title'];
+$plain = trim(preg_replace('/\s+/', ' ', strip_tags((string)$topic['body'])));
+$pageDescription = function_exists('mb_substr') ? mb_substr($plain, 0, 180) : substr($plain, 0, 180);
+$pageOgType = 'article';
+$pageCanonical = topicPermalink($topic['slug']);
 include __DIR__ . '/partials_header.php';
 ?>
 <div class="wrap section" style="border-top:none;max-width:760px;">

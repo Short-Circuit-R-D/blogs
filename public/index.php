@@ -19,6 +19,8 @@ if ($events) {
 }
 
 $pageTitle = 'Lighting Technical Data';
+$pageDescription = 'Lighting technical data, standards, and design guides from Short Circuit Company.';
+$pageCanonical = publicSiteUrl();
 include __DIR__ . '/partials_header.php';
 ?>
 

@@ -44,6 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'comme
 $comments = getArticleComments((int)$article['id']);
 
 $pageTitle = $article['title'];
+$pageDescription = $article['excerpt'] ?: 'Lighting technical guide from Short Circuit Company.';
+$pageOgType = 'article';
+$pageCanonical = articlePermalink($article['slug']);
+$pageOgImage = !empty($article['image_url']) ? $article['image_url'] : defaultOgImageUrl();
 include __DIR__ . '/partials_header.php';
 ?>
 

@@ -75,7 +75,7 @@ function sendMailViaPhpMailFunction(string $to, string $subject, string $htmlBod
 
 function siteEmailLayout(string $title, string $bodyHtml): string
 {
-    $logo = 'https://shortcircuit.company/assets/img/logo-dark.svg';
+    $logo = rtrim(PUBLIC_SITE_URL, '/') . '/logo.svg';
     return '<!DOCTYPE html><html><body style="margin:0;background:#f5f5f5;font-family:Arial,sans-serif;">'
         . '<div style="max-width:560px;margin:0 auto;padding:32px 24px;">'
         . '<img src="' . e($logo) . '" alt="Short Circuit Company" style="height:28px;margin-bottom:24px;">'
