@@ -16,15 +16,15 @@ require_once __DIR__ . '/../config.php'; // ensures DB/mail constants + Composer
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
 
-function sendMail(string $to, string $subject, string $htmlBody): bool
+function sendMail(string $to, string $subject, string $htmlBody, ?string $replyTo = null): bool
 {
     if (defined('SMTP_HOST') && SMTP_HOST !== '') {
-        return sendMailViaPHPMailer($to, $subject, $htmlBody);
+        return sendMailViaPHPMailer($to, $subject, $htmlBody, $replyTo);
     }
-    return sendMailViaPhpMailFunction($to, $subject, $htmlBody);
+    return sendMailViaPhpMailFunction($to, $subject, $htmlBody, $replyTo);
 }
 
-function sendMailViaPHPMailer(string $to, string $subject, string $htmlBody): bool
+function sendMailViaPHPMailer(string $to, string $subject, string $htmlBody, ?string $replyTo = null): bool
 {
     if (!class_exists(PHPMailer::class)) {
         error_log('sendMail: PHPMailer not found — run `composer require phpmailer/phpmailer` and make sure config.php requires vendor/autoload.php.');
@@ -49,6 +49,9 @@ function sendMailViaPHPMailer(string $to, string $subject, string $htmlBody): bo
 
         $mail->setFrom(MAIL_FROM_ADDRESS, MAIL_FROM_NAME);
         $mail->addAddress($to);
+        if ($replyTo && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+            $mail->addReplyTo($replyTo);
+        }
         $mail->isHTML(true);
         $mail->Subject = $subject;
         $mail->Body    = $htmlBody;
@@ -65,11 +68,14 @@ function sendMailViaPHPMailer(string $to, string $subject, string $htmlBody): bo
     }
 }
 
-function sendMailViaPhpMailFunction(string $to, string $subject, string $htmlBody): bool
+function sendMailViaPhpMailFunction(string $to, string $subject, string $htmlBody, ?string $replyTo = null): bool
 {
     $headers  = "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
     $headers .= 'From: ' . MAIL_FROM_NAME . ' <' . MAIL_FROM_ADDRESS . ">\r\n";
+    if ($replyTo && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+        $headers .= 'Reply-To: ' . $replyTo . "\r\n";
+    }
     return @mail($to, $subject, $htmlBody, $headers);
 }
 

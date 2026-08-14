@@ -228,6 +228,8 @@ table.spec-table tr:nth-child(even) td{background:var(--sc-surface);}
 }
 .footer-inner{width:var(--content-width);margin:0 var(--content-margin);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-md);}
 .footer-inner p{font-size:var(--text-xs);margin:0;letter-spacing:.04em;}
+.footer-inner a{color:var(--sc-red);text-decoration:none;}
+.footer-inner a:hover{text-decoration:underline;}
 .empty-note{font-size:var(--text-sm);color:var(--sc-text-muted);}
 
 /* ---- Header nav / account ---- */
@@ -362,10 +364,12 @@ table.spec-table tr:nth-child(even) td{background:var(--sc-surface);}
 .auth-card label{display:flex;flex-direction:column;gap:6px;font-size:var(--text-sm);font-weight:500;color:var(--sc-text);}
 .auth-card label[hidden],.js-profession-other[hidden]{display:none !important;}
 .auth-card label .hint{font-weight:400;color:var(--sc-text-muted);text-transform:none;letter-spacing:0;}
-.auth-card input[type="text"],.auth-card input[type="email"],.auth-card input[type="password"],.auth-card input[type="tel"],.auth-card select{
+.auth-card input[type="text"],.auth-card input[type="email"],.auth-card input[type="password"],.auth-card input[type="tel"],.auth-card select,.auth-card textarea{
   border:1.5px solid var(--sc-border);border-radius:var(--radius-sm);padding:11px 14px;font-family:var(--font-body);
   font-size:var(--text-base);background:var(--sc-white);color:var(--sc-text);}
-.auth-card input:focus,.auth-card select:focus{outline:none;border-color:var(--sc-red);}
+.auth-card textarea{min-height:140px;resize:vertical;line-height:1.5;}
+.auth-card input:focus,.auth-card select:focus,.auth-card textarea:focus{outline:none;border-color:var(--sc-red);}
+.hp-field{position:absolute;left:-9999px;height:0;overflow:hidden;}
 .phone-row{display:flex;gap:8px;align-items:stretch;}
 .phone-row select{width:46%;min-width:0;padding:11px 8px;}
 .phone-row input{flex:1;min-width:0;}

@@ -9,6 +9,7 @@ $counts = [
     'events'    => db()->query('SELECT COUNT(*) FROM events')->fetchColumn(),
     'pending_topics' => db()->query("SELECT COUNT(*) FROM discussion_topics WHERE status = 'pending'")->fetchColumn(),
     'users'     => db()->query('SELECT COUNT(*) FROM users')->fetchColumn(),
+    'contacts_new' => db()->query('SELECT COUNT(*) FROM contact_messages WHERE is_read = 0')->fetchColumn(),
 ];
 
 $pageTitle = 'Overview';
@@ -41,6 +42,10 @@ include __DIR__ . '/partials_header.php';
   <a href="users" class="stat-card">
     <span class="stat-num"><?= (int)$counts['users'] ?></span>
     <span class="stat-label">Users</span>
+  </a>
+  <a href="contacts" class="stat-card">
+    <span class="stat-num"><?= (int)$counts['contacts_new'] ?></span>
+    <span class="stat-label">New Contact Messages</span>
   </a>
 </div>
 

@@ -47,6 +47,7 @@ function sitemapCollect(string $type): array
         $add(publicSiteUrl('topics'), $now, 'daily', '0.8');
         $add(publicSiteUrl('search'), $now, 'weekly', '0.5');
         $add(publicSiteUrl('subscribe'), $now, 'monthly', '0.6');
+        $add(publicSiteUrl('contact'), $now, 'monthly', '0.6');
     }
 
     try {

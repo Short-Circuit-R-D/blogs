@@ -10,9 +10,17 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ---------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS admin_users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(60) NOT NULL UNIQUE,
+  username VARCHAR(190) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  name VARCHAR(120) NOT NULL DEFAULT '',
+  email VARCHAR(190) DEFAULT NULL,
+  phone VARCHAR(40) DEFAULT NULL,
+  company VARCHAR(160) DEFAULT NULL,
+  title VARCHAR(120) DEFAULT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_admin_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Default admin: username "admin" / password "changeme123"
@@ -235,6 +243,22 @@ CREATE TABLE IF NOT EXISTS admin_audit_logs (
   KEY idx_audit_occurred (occurred_at),
   KEY idx_audit_account (account),
   KEY idx_audit_file (log_file)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Public Contact Us form
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(190) NOT NULL,
+  company VARCHAR(160) DEFAULT NULL,
+  message TEXT NOT NULL,
+  ip VARCHAR(45) DEFAULT NULL,
+  user_agent VARCHAR(255) DEFAULT NULL,
+  is_read TINYINT(1) NOT NULL DEFAULT 0,
+  emailed_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_contact_created (created_at),
+  KEY idx_contact_read (is_read)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------

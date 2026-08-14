@@ -83,6 +83,7 @@ $jsonLdNodes = is_array($pageJsonLd ?? null) ? $pageJsonLd : [];
         <a href="articles">Articles</a>
         <a href="topics">Community</a>
         <a href="search">Search</a>
+        <a href="contact">Contact</a>
         <?php if ($navCanModerate): ?><a href="moderate">Moderate</a><?php endif; ?>
         <?php if ($navUserFull && in_array($navUserFull['role'] ?? '', ['employee', 'leader', 'admin'], true)): ?>
           <a href="account">Staff</a>

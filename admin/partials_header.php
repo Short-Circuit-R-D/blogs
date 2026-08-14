@@ -31,11 +31,16 @@ requireLogin();
       <a href="tools" class="<?= ($activeNav ?? '') === 'tools' ? 'active' : '' ?>">Tools</a>
       <a href="events" class="<?= ($activeNav ?? '') === 'events' ? 'active' : '' ?>">Events</a>
       <a href="topics" class="<?= ($activeNav ?? '') === 'topics' ? 'active' : '' ?>">Community Topics</a>
+      <a href="contacts" class="<?= ($activeNav ?? '') === 'contacts' ? 'active' : '' ?>">Contact Messages</a>
       <a href="users" class="<?= ($activeNav ?? '') === 'users' ? 'active' : '' ?>">Users</a>
+      <a href="admins" class="<?= ($activeNav ?? '') === 'admins' ? 'active' : '' ?>">CMS Admins</a>
       <a href="roles" class="<?= ($activeNav ?? '') === 'roles' ? 'active' : '' ?>">Roles & Permissions</a>
     </nav>
     <div class="admin-nav-foot">
-      <p>Signed in as <strong><?= e(currentAdmin()['username']) ?></strong></p>
+      <p>Signed in as <strong><?php
+        $navAdmin = currentAdmin();
+        echo e(($navAdmin['name'] ?? '') !== '' ? $navAdmin['name'] : ($navAdmin['username'] ?? ''));
+      ?></strong></p>
       <a href="logout" class="logout-link">Log out</a>
       <a href="../" class="logout-link" target="_blank">View live site ↗</a>
     </div>

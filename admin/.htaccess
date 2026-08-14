@@ -19,6 +19,8 @@ DirectoryIndex dashboard.php login.php
   # Same pattern for user, topic, tool, standard, event.
   RewriteRule ^(article|user|topic|tool|standard|event)/new/?$ $1_edit.php [L,QSA]
   RewriteRule ^(article|user|topic|tool|standard|event)/([0-9]+)/?$ $1_edit.php?id=$2 [L,QSA]
+  RewriteRule ^admin-user/new/?$ admin_edit.php [L,QSA]
+  RewriteRule ^admin-user/([0-9]+)/?$ admin_edit.php?id=$1 [L,QSA]
 
   # Extensionless pages: /admin/articles → articles.php
   RewriteCond %{REQUEST_FILENAME}.php -f

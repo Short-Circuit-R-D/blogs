@@ -132,9 +132,167 @@ function ensureFrontendSchema(): void
                 CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
         );
+
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS contact_messages (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(120) NOT NULL,
+                email VARCHAR(190) NOT NULL,
+                company VARCHAR(160) DEFAULT NULL,
+                message TEXT NOT NULL,
+                ip VARCHAR(45) DEFAULT NULL,
+                user_agent VARCHAR(255) DEFAULT NULL,
+                is_read TINYINT(1) NOT NULL DEFAULT 0,
+                emailed_at DATETIME DEFAULT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                KEY idx_contact_created (created_at),
+                KEY idx_contact_read (is_read)
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+        );
+
+        ensureAdminUsersSchema($pdo);
     } catch (\Throwable $e) {
         // Don't block the public site if the account can't ALTER TABLE.
     }
+}
+
+/** Extra profile columns on CMS `admin_users` so contact mail has a real inbox per admin. */
+function ensureAdminUsersSchema(?PDO $pdo = null): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    $pdo = $pdo ?: db();
+
+    try {
+        $pdo->exec('ALTER TABLE admin_users MODIFY username VARCHAR(190) NOT NULL');
+    } catch (\Throwable $e) {
+        // Already wide enough, or no ALTER privilege.
+    }
+
+    $cols = [
+        'name'       => 'ALTER TABLE admin_users ADD COLUMN name VARCHAR(120) NOT NULL DEFAULT \'\' AFTER password_hash',
+        'email'      => 'ALTER TABLE admin_users ADD COLUMN email VARCHAR(190) DEFAULT NULL AFTER name',
+        'phone'      => 'ALTER TABLE admin_users ADD COLUMN phone VARCHAR(40) DEFAULT NULL AFTER email',
+        'company'    => 'ALTER TABLE admin_users ADD COLUMN company VARCHAR(160) DEFAULT NULL AFTER phone',
+        'title'      => 'ALTER TABLE admin_users ADD COLUMN title VARCHAR(120) DEFAULT NULL AFTER company',
+        'is_active'  => 'ALTER TABLE admin_users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER title',
+        'updated_at' => 'ALTER TABLE admin_users ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at',
+    ];
+    foreach ($cols as $name => $ddl) {
+        try {
+            $exists = $pdo->query('SHOW COLUMNS FROM admin_users LIKE ' . $pdo->quote($name))->fetch();
+            if (!$exists) {
+                $pdo->exec($ddl);
+            }
+        } catch (\Throwable $e) {
+            // Continue; login must still work.
+        }
+    }
+
+    try {
+        $idx = $pdo->query("SHOW INDEX FROM admin_users WHERE Key_name = 'uniq_admin_email'")->fetch();
+        if (!$idx) {
+            $pdo->exec('ALTER TABLE admin_users ADD UNIQUE KEY uniq_admin_email (email)');
+        }
+    } catch (\Throwable $e) {
+        // Duplicate emails would block the unique key; skip.
+    }
+
+    try {
+        $pdo->exec(
+            "UPDATE admin_users
+             SET email = username
+             WHERE (email IS NULL OR email = '')
+               AND username LIKE '%@%'"
+        );
+    } catch (\Throwable $e) {
+        // Ignore backfill failures.
+    }
+}
+
+/** CMS admins (`admin_users`) who should receive Contact Us emails. */
+function contactAdminRecipients(): array
+{
+    ensureAdminUsersSchema();
+    $recipients = [];
+    $seen = [];
+    try {
+        $rows = db()->query(
+            "SELECT name, email FROM admin_users
+             WHERE is_active = 1 AND email IS NOT NULL AND email != ''"
+        )->fetchAll();
+        foreach ($rows as $row) {
+            $email = strtolower(trim((string)$row['email']));
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL) || isset($seen[$email])) {
+                continue;
+            }
+            $seen[$email] = true;
+            $recipients[] = [
+                'name'  => trim((string)$row['name']),
+                'email' => $email,
+            ];
+        }
+    } catch (\Throwable $e) {
+        // Table may still be migrating.
+    }
+    return $recipients;
+}
+
+/** @deprecated use contactAdminRecipients() */
+function contactAdminEmails(): array
+{
+    return array_column(contactAdminRecipients(), 'email');
+}
+
+/** Email a stored contact-form row to every CMS admin_users inbox. Returns how many sends succeeded. */
+function notifyContactAdmins(array $msg): int
+{
+    require_once __DIR__ . '/mailer.php';
+    $recipients = contactAdminRecipients();
+    if (!$recipients) {
+        return 0;
+    }
+
+    $id = (int)($msg['id'] ?? 0);
+    $name = (string)($msg['name'] ?? '');
+    $email = (string)($msg['email'] ?? '');
+    $company = trim((string)($msg['company'] ?? ''));
+    $message = (string)($msg['message'] ?? '');
+    $when = !empty($msg['created_at']) ? date('j M Y, H:i', strtotime($msg['created_at'])) : date('j M Y, H:i');
+    $adminUrl = rtrim(PUBLIC_SITE_URL, '/') . '/admin/contact_view.php?id=' . $id;
+
+    $row = static function (string $label, string $value) {
+        return '<tr>'
+            . '<td style="padding:10px 12px;border-bottom:1px solid #eee;width:140px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#888;vertical-align:top;">'
+            . e($label) . '</td>'
+            . '<td style="padding:10px 12px;border-bottom:1px solid #eee;font-size:14px;color:#111;vertical-align:top;">'
+            . $value . '</td></tr>';
+    };
+
+    $details = '<table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #eee;border-radius:6px;">'
+        . $row('Reference', '#' . $id)
+        . $row('Submitted', e($when))
+        . $row('Name', e($name))
+        . $row('Email', '<a href="mailto:' . e($email) . '">' . e($email) . '</a>')
+        . $row('Company', $company !== '' ? e($company) : '<span style="color:#999;">—</span>')
+        . $row('Message', '<div style="white-space:pre-wrap;line-height:1.6;">' . nl2br(e($message)) . '</div>')
+        . '</table>'
+        . '<p style="margin-top:20px;"><a href="' . e($adminUrl) . '" style="color:#eb1b26;">Open in the CMS</a></p>';
+
+    $subject = 'Contact Us: ' . $name . ($company !== '' ? ' (' . $company . ')' : '');
+    $sent = 0;
+    foreach ($recipients as $admin) {
+        $hello = $admin['name'] !== '' ? 'Hi ' . e($admin['name']) . ',' : 'Hi,';
+        $body = '<p>' . $hello . '</p>'
+            . '<p>A new message was submitted on the lighting blog Contact Us form.</p>'
+            . $details;
+        $html = siteEmailLayout('Contact form — ' . $name, $body);
+        if (sendMail($admin['email'], $subject, $html, $email)) {
+            $sent++;
+        }
+    }
+    return $sent;
 }
 
 /**

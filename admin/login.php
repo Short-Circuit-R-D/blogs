@@ -11,13 +11,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    $stmt = db()->prepare('SELECT id, username, password_hash FROM admin_users WHERE username = ?');
+    ensureAdminUsersSchema();
+    $stmt = db()->prepare('SELECT id, username, password_hash, name, email, is_active FROM admin_users WHERE username = ?');
     $stmt->execute([$username]);
     $user = $stmt->fetch();
 
-    if ($user && password_verify($password, $user['password_hash'])) {
+    if ($user && password_verify($password, $user['password_hash']) && empty($user['is_active'])) {
+        adminAuditLog('login_fail', $username, 'Deactivated CMS admin login');
+        $error = 'This admin account has been deactivated.';
+    } elseif ($user && password_verify($password, $user['password_hash'])) {
         session_regenerate_id(true);
-        $_SESSION['admin'] = ['id' => $user['id'], 'username' => $user['username']];
+        $_SESSION['admin'] = [
+            'id'       => $user['id'],
+            'username' => $user['username'],
+            'name'     => $user['name'] ?? '',
+            'email'    => $user['email'] ?? '',
+        ];
         adminAuditLog('login_success', $user['username'], 'Admin signed in');
         redirect('dashboard.php');
     } else {

@@ -135,6 +135,11 @@ a.pill:hover{color:var(--sc-red);}
 .notify-box strong{font-size:13px;}
 .notify-box form{margin:0;}
 
+.contact-dl{display:grid;grid-template-columns:160px 1fr;gap:8px 18px;max-width:720px;margin:0 0 20px;font-size:14px;}
+.contact-dl dt{color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding-top:4px;}
+.contact-dl dd{margin:0;}
+.contact-body{white-space:pre-wrap;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;line-height:1.65;max-width:720px;}
+
 .admin-topbar{display:none;}
 .admin-backdrop{display:none;}
 .admin-menu-btn{font-family:var(--font-body);font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;
