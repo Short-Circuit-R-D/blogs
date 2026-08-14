@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://blogs.shortcircuit.company/sitemap-pages.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://blogs.shortcircuit.company/sitemap-articles.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://blogs.shortcircuit.company/sitemap-topics.xml</loc>
+  </sitemap>
+</sitemapindex>

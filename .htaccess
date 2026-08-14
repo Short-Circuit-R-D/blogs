@@ -24,9 +24,12 @@ Options -Indexes
   # Brand assets at the project root (Open Graph / favicon).
   RewriteRule ^(logo\.svg|og-image\.png)$ - [L]
 
-  # SEO files at the site root.
+  # SEO files at the site root. sitemap.xml is a real file (sitemap index).
+  # Child sitemaps are generated as XML even though PHP builds them.
   RewriteRule ^robots\.txt$ public/robots.php [L]
-  RewriteRule ^sitemap\.xml$ public/sitemap.php [L]
+  RewriteRule ^sitemap-pages\.xml$ public/sitemap.php?type=pages [L,QSA]
+  RewriteRule ^sitemap-articles\.xml$ public/sitemap.php?type=articles [L,QSA]
+  RewriteRule ^sitemap-topics\.xml$ public/sitemap.php?type=topics [L,QSA]
 
   # Requests already inside /public, /admin, or /uploads pass through untouched.
   RewriteRule ^(public|admin|uploads)(/|$) - [L]
