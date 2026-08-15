@@ -48,7 +48,7 @@ $pageTitle = $article['title'];
 $pageDescription = $article['excerpt'] ?: seoDefaultDescription();
 $pageOgType = 'article';
 $pageCanonical = articlePermalink($article['slug']);
-$pageOgImage = !empty($article['image_url']) ? $article['image_url'] : defaultOgImageUrl();
+$pageOgImage = !empty($article['image_url']) ? mediaAbsUrl($article['image_url']) : defaultOgImageUrl();
 $pageJsonLd = [
     seoBreadcrumbList([
         ['name' => 'Home', 'url' => publicSiteUrl()],
@@ -81,7 +81,7 @@ include __DIR__ . '/partials_header.php';
 ?>
 
 <?php if ($hasCover): ?>
-<div class="article-hero-cover" style="background-image:url('<?= e($article['image_url']) ?>');">
+<div class="article-hero-cover" style="background-image:url('<?= e(mediaSrc($article['image_url'])) ?>');">
   <div class="article-hero-overlay">
     <div class="wrap">
       <a class="back-btn back-btn-light" href="articles">← Back to all articles</a>

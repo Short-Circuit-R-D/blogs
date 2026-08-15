@@ -24,7 +24,15 @@ if ($id) {
 $errors = [];
 $notifiedCount = null;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'notify_subscribers') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_image') {
+    csrfCheck();
+    if ($id && !empty($article['image_url'])) {
+        mediaUnlinkLocal($article['image_url']);
+        db()->prepare('UPDATE articles SET image_url = NULL WHERE id = ?')->execute([$id]);
+        $article['image_url'] = null;
+    }
+    redirect('article_edit.php?id=' . $id . '&saved=1');
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'notify_subscribers') {
     csrfCheck();
     if ($id && $article['is_published']) {
         $notifiedCount = notifySubscribers($article);
@@ -56,6 +64,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'notif
     if ($article['excerpt'] === '') $errors[] = 'Excerpt is required.';
     if ($article['intro'] === '')   $errors[] = 'Intro is required.';
     if ($article['slug'] === '')    $errors[] = 'Slug could not be generated — add a title or a manual slug.';
+
+    if (!$errors && !empty($_FILES['image']['name']) && (int)($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+        try {
+            $uploaded = saveUpload('image', 'articles');
+            if ($uploaded) {
+                if (!empty($article['image_url']) && $article['image_url'] !== $uploaded) {
+                    mediaUnlinkLocal($article['image_url']);
+                }
+                $article['image_url'] = $uploaded;
+            }
+        } catch (Throwable $ex) {
+            $errors[] = $ex->getMessage();
+        }
+    }
 
     // Repeatable range rows
     $stages = $_POST['range_stage'] ?? [];
@@ -113,6 +135,7 @@ include __DIR__ . '/partials_header.php';
 ?>
 
 <?php foreach ($errors as $err): ?><div class="alert"><?= e($err) ?></div><?php endforeach; ?>
+<?php if (isset($_GET['saved'])): ?><div class="alert-ok">Saved.</div><?php endif; ?>
 <?php if ($notifiedCount !== null): ?><div class="alert-ok">Sent to <?= (int)$notifiedCount ?> subscriber<?= $notifiedCount === 1 ? '' : 's' ?>.</div><?php endif; ?>
 
 <?php if ($id && $article['is_published']): ?>
@@ -132,7 +155,7 @@ include __DIR__ . '/partials_header.php';
 </div>
 <?php endif; ?>
 
-<form method="post" class="admin-form">
+<form method="post" class="admin-form" enctype="multipart/form-data">
   <input type="hidden" name="id" value="<?= (int)$article['id'] ?>">
   <input type="hidden" name="csrf" value="<?= e(csrfToken()) ?>">
 
@@ -145,23 +168,26 @@ include __DIR__ . '/partials_header.php';
     </label>
   </div>
 
-  <div class="form-grid-2">
-    <label>Image URL <span class="hint">(shown on the card + article header — 800×450 or any 16:9 crops cleanest)</span>
-      <input type="url" name="image_url" id="image_url_field" value="<?= e($article['image_url'] ?? '') ?>"
-             placeholder="https://.../cri-example.jpg" oninput="document.getElementById('image_url_preview').src=this.value">
+  <div class="cover-editor">
+    <input type="hidden" name="image_url" value="<?= e($article['image_url'] ?? '') ?>">
+    <label>Cover image <span class="hint">(card + article header — JPG, PNG, WEBP, or SVG)</span>
+      <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,.svg,image/jpeg,image/png,image/webp,image/svg+xml">
     </label>
-    <label>Preview
-      <span class="image-preview">
-        <img id="image_url_preview" src="<?= e($article['image_url'] ?? '') ?>" alt="" onerror="this.style.visibility='hidden'" onload="this.style.visibility='visible'">
-      </span>
-    </label>
+    <?php if (!empty($article['image_url'])): ?>
+    <div class="cover-preview-wrap">
+      <img class="cover-preview" src="<?= e(mediaSrc($article['image_url'])) ?>" alt="">
+      <button type="submit" name="action" value="delete_image" class="btn-secondary" formnovalidate onclick="return confirm('Remove this cover image?');">Delete image</button>
+    </div>
+    <?php else: ?>
+    <p class="hint">No cover yet — the fallback icon below is used until you upload one.</p>
+    <?php endif; ?>
   </div>
 
   <div class="form-grid-3">
     <label>Tag
       <input type="text" name="tag" value="<?= e($article['tag']) ?>" placeholder="Colour / Comfort / Health / Standard / Guide">
     </label>
-    <label>Fallback icon <span class="hint">(only used while Image URL above is empty)</span>
+    <label>Fallback icon <span class="hint">(only used while there is no cover image)</span>
       <select name="icon">
         <?php foreach ($icons as $ic): ?>
           <option value="<?= e($ic) ?>" <?= $article['icon'] === $ic ? 'selected' : '' ?>><?= e($ic) ?></option>

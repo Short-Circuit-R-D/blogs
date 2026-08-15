@@ -40,6 +40,17 @@ function appBase(): string
     return $base;
 }
 
+/** Install root URL prefix — never includes /admin, /public, or /api. */
+function appRootBase(): string
+{
+    $base = appBase();
+    if (basename($base) === 'admin') {
+        $parent = rtrim(str_replace('\\', '/', dirname($base)), '/');
+        return ($parent === '/' || $parent === '.' || $parent === '') ? '' : $parent;
+    }
+    return $base;
+}
+
 /** Site-relative URL. Pass '' for the install root (always with a trailing slash). */
 function appUrl(string $path = ''): string
 {
@@ -555,13 +566,24 @@ function saveUpload(string $fieldName, string $subdir): ?string
         throw new RuntimeException('Upload failed with error code ' . $_FILES[$fieldName]['error']);
     }
 
-    $allowed = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'];
+    $allowed = [
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        'svg' => 'image/svg+xml',
+    ];
     $ext = strtolower(pathinfo($_FILES[$fieldName]['name'], PATHINFO_EXTENSION));
     if (!isset($allowed[$ext])) {
-        throw new RuntimeException('Only JPG, PNG, or WEBP images are allowed.');
+        throw new RuntimeException('Only JPG, PNG, WEBP, or SVG images are allowed.');
     }
 
-    $targetDir = UPLOAD_DIR . '/' . trim($subdir, '/');
+    $subdir = trim(str_replace('\\', '/', $subdir), '/');
+    if (str_contains($subdir, '..')) {
+        throw new RuntimeException('Invalid upload folder.');
+    }
+
+    $targetDir = rtrim(UPLOAD_DIR, '/\\') . ($subdir !== '' ? '/' . $subdir : '');
     if (!is_dir($targetDir)) {
         mkdir($targetDir, 0775, true);
     }
@@ -573,13 +595,74 @@ function saveUpload(string $fieldName, string $subdir): ?string
         throw new RuntimeException('Could not move uploaded file.');
     }
 
-    return trim($subdir, '/') . '/' . $filename;
+    return $subdir !== '' ? $subdir . '/' . $filename : $filename;
+}
+
+function mediaIsRemote(?string $stored): bool
+{
+    $stored = trim((string)$stored);
+    return $stored !== '' && (bool) preg_match('#^(https?:)?//#i', $stored);
+}
+
+/** Public URL for a stored image: remote URL as-is, or /uploads/{relative}. */
+function mediaSrc(?string $stored): string
+{
+    $stored = trim((string)$stored);
+    if ($stored === '') {
+        return '';
+    }
+    if (mediaIsRemote($stored)) {
+        return $stored;
+    }
+    $parts = array_map('rawurlencode', explode('/', str_replace('\\', '/', ltrim($stored, '/'))));
+    $root = appRootBase();
+    return ($root === '' ? '' : $root) . '/uploads/' . implode('/', $parts);
+}
+
+/** Absolute URL for OG tags and emails. */
+function mediaAbsUrl(?string $stored): string
+{
+    $stored = trim((string)$stored);
+    if ($stored === '') {
+        return '';
+    }
+    if (mediaIsRemote($stored)) {
+        return $stored;
+    }
+    $parts = array_map('rawurlencode', explode('/', str_replace('\\', '/', ltrim($stored, '/'))));
+    return publicSiteUrl('uploads/' . implode('/', $parts));
 }
 
 function uploadUrl(?string $relativePath): ?string
 {
-    if (!$relativePath) return null;
-    return UPLOAD_URL . '/' . ltrim($relativePath, '/');
+    $src = mediaSrc($relativePath);
+    return $src !== '' ? $src : null;
+}
+
+function mediaLocalPath(?string $stored): ?string
+{
+    $stored = trim((string)$stored);
+    if ($stored === '' || mediaIsRemote($stored) || str_contains($stored, '..')) {
+        return null;
+    }
+    $full = UPLOAD_DIR . '/' . ltrim(str_replace('\\', '/', $stored), '/');
+    $base = realpath(UPLOAD_DIR);
+    if (!$base || !is_file($full)) {
+        return is_file($full) ? $full : null;
+    }
+    $real = realpath($full);
+    if ($real && str_starts_with($real, $base)) {
+        return $real;
+    }
+    return null;
+}
+
+function mediaUnlinkLocal(?string $stored): void
+{
+    $path = mediaLocalPath($stored);
+    if ($path && is_file($path)) {
+        @unlink($path);
+    }
 }
 
 /**
@@ -590,9 +673,9 @@ function uploadUrl(?string $relativePath): ?string
  */
 function mediaTag(?string $imageUrl, string $iconKey, string $alt = '', string $class = ''): string
 {
-    $imageUrl = trim((string)$imageUrl);
-    if ($imageUrl !== '') {
-        return '<img src="' . e($imageUrl) . '" alt="' . e($alt) . '" class="' . e($class) . '" loading="lazy">';
+    $src = mediaSrc($imageUrl);
+    if ($src !== '') {
+        return '<img src="' . e($src) . '" alt="' . e($alt) . '" class="' . e($class) . '" loading="lazy">';
     }
     return '<span class="' . e($class) . ' icon-fallback">' . iconSvg($iconKey) . '</span>';
 }
@@ -803,7 +886,7 @@ function notifySubscribers(array $article): int
 
     $imageHtml = '';
     if (!empty($article['image_url'])) {
-        $imageHtml = '<img src="' . e($article['image_url']) . '" alt="' . e($article['title']) . '" '
+        $imageHtml = '<img src="' . e(mediaAbsUrl($article['image_url'])) . '" alt="' . e($article['title']) . '" '
                    . 'style="width:100%;max-width:512px;height:auto;border-radius:6px;display:block;margin:0 0 20px;">';
     }
 
