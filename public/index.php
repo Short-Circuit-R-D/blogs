@@ -133,7 +133,7 @@ include __DIR__ . '/partials_header.php';
   <?php else: ?><p class="empty-note">No tools published yet.</p><?php endif; ?>
 </div>
 
-<div class="wrap section">
+<div class="wrap section" id="events">
   <p class="section-label">On The Ground</p>
   <h2 class="section-title">Events &amp; Exhibitions</h2>
   <p class="section-sub">Short Circuit Company at LedEXPO and other lighting events.</p>
@@ -146,6 +146,8 @@ include __DIR__ . '/partials_header.php';
           <h3><?= e($ev['name']) ?></h3>
           <?php if ($ev['year']): ?><p class="event-year"><?= e((string)$ev['year']) ?></p><?php endif; ?>
           <?php if ($ev['description']): ?><p><?= e($ev['description']) ?></p><?php endif; ?>
+          <?php renderShareBar(eventPermalink((int)$ev['id']), $ev['name'], (string)($ev['description'] ?? ''), true); ?>
+          <a class="read-more" href="<?= e(eventUrl((int)$ev['id'])) ?>" style="margin:0 0 12px;">View event →</a>
           <div class="event-gallery">
             <?php if (!empty($eventImages[$ev['id']])): foreach ($eventImages[$ev['id']] as $img): ?>
               <img src="<?= e(uploadUrl($img['image_path'])) ?>" alt="<?= e($img['caption'] ?? $ev['name']) ?>">

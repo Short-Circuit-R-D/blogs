@@ -102,6 +102,7 @@ include __DIR__ . '/partials_header.php';
 <?php endif; ?>
 
 <div class="wrap section" style="border-top:none;">
+  <?php renderShareBar(articlePermalink($article['slug']), $article['title'], (string)$article['excerpt']); ?>
 
   <p class="article-intro"><?= nl2br(e($article['intro'])) ?></p>
 

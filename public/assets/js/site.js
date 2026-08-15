@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initPhoneFields();
   initProfessionOther();
   initMobileNav();
+  initShareBars(document);
 });
 
 function initInfiniteArticles() {
@@ -102,6 +103,7 @@ function initInfiniteArticles() {
           const wrap = document.createElement('div');
           wrap.innerHTML = data.html;
           while (wrap.firstChild) grid.appendChild(wrap.firstChild);
+          initShareBars(grid);
         }
         page = data.page || next;
         hasMore = !!data.hasMore;
@@ -231,3 +233,51 @@ function initMobileNav() {
   nav.querySelectorAll('a').forEach((a) => a.addEventListener('click', close));
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 }
+
+function initShareBars(root) {
+  const scope = root && root.querySelectorAll ? root : document;
+  if (navigator.share) {
+    scope.querySelectorAll('.share-native').forEach((btn) => { btn.hidden = false; });
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const nativeBtn = e.target.closest('.share-native');
+  if (nativeBtn) {
+    const bar = nativeBtn.closest('.share-bar');
+    if (!bar || !navigator.share) return;
+    e.preventDefault();
+    navigator.share({
+      title: bar.getAttribute('data-share-title') || document.title,
+      text: bar.getAttribute('data-share-text') || '',
+      url: bar.getAttribute('data-share-url') || window.location.href,
+    }).catch(() => {});
+    return;
+  }
+
+  const copyBtn = e.target.closest('[data-copy-url]');
+  if (!copyBtn) return;
+  const bar = copyBtn.closest('.share-bar');
+  const url = (bar && bar.getAttribute('data-share-url')) || copyBtn.getAttribute('data-copy-url') || '';
+  if (!url) return;
+  const label = copyBtn.querySelector('span');
+  const restore = label ? label.textContent : '';
+  const done = () => {
+    copyBtn.classList.add('is-copied');
+    if (label) label.textContent = 'Copied';
+    copyBtn.setAttribute('title', 'Copied');
+    setTimeout(() => {
+      copyBtn.classList.remove('is-copied');
+      if (label) label.textContent = restore;
+      copyBtn.setAttribute('title', 'Copy link');
+    }, 1600);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done).catch(() => {
+      window.prompt('Copy this link', url);
+    });
+  } else {
+    window.prompt('Copy this link', url);
+  }
+});
+

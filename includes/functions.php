@@ -80,9 +80,73 @@ function articlePermalink(string $slug): string
     return publicSiteUrl('article/' . rawurlencode($slug));
 }
 
+function eventUrl(int $id): string
+{
+    return 'event/' . $id;
+}
+
+function eventPermalink(int $id): string
+{
+    return publicSiteUrl('event/' . $id);
+}
+
 function topicPermalink(string $slug): string
 {
     return publicSiteUrl('topic/' . rawurlencode($slug));
+}
+
+function shareIcon(string $name): string
+{
+    $icons = [
+        'copy' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 16V6a2 2 0 0 1 2-2h10" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+        'share' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="2.2" fill="currentColor"/><circle cx="18" cy="6" r="2.2" fill="currentColor"/><circle cx="18" cy="18" r="2.2" fill="currentColor"/><path d="M8 12l8-5M8 12l8 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+        'facebook' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 9h3V6h-3c-2.2 0-4 1.8-4 4v2H8v3h2v7h3v-7h3l1-3h-4v-2c0-.6.4-1 1-1z"/></svg>',
+        'x' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.5 4h2.3L14.6 10.4 21 20h-5.4l-4.2-6.2L6.6 20H4.2l5.6-6.8L3.5 4h5.5l3.8 5.7L17.5 4zm-.8 14.4h1.3L7.4 5.5H6L16.7 18.4z"/></svg>',
+        'linkedin' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.5 9H4V20h2.5V9zM5.2 4A1.6 1.6 0 1 0 5.2 7.2 1.6 1.6 0 0 0 5.2 4zM20 20h-2.5v-5.6c0-1.6-.6-2.5-1.8-2.5-1 0-1.5.7-1.8 1.3-.1.2-.1.6-.1.9V20H11s.1-8.8 0-9.7h2.5v1.4c.4-.6 1.2-1.6 2.9-1.6 2.1 0 3.6 1.4 3.6 4.3V20z"/></svg>',
+        'whatsapp' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.2A8.7 8.7 0 0 0 4.4 16.3L3.5 20.5l4.3-.9A8.7 8.7 0 1 0 12 3.2zm0 15.8c-1.3 0-2.6-.3-3.7-1l-.3-.2-2.6.5.5-2.5-.2-.3A6.9 6.9 0 1 1 12 19zm3.8-5.2c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1l-.7.8c-.1.1-.3.2-.5.1-.5-.2-1.5-.7-2.2-1.6-.3-.4-.6-.8-.6-1.1 0-.2 0-.3.1-.4l.4-.5c.1-.1.1-.3.2-.4s0-.3 0-.4l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.4c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.3c.1.2 1.6 2.5 3.9 3.4 1.4.5 1.7.4 2.3.3.4 0 1.2-.5 1.3-1 .2-.5.2-.9.1-1 0-.1-.2-.1-.4-.2z"/></svg>',
+        'telegram' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.6 4.4 3.9 10.8c-1.1.4-1.1 1.1-.2 1.4l4.3 1.3 1.6 5c.2.6.1.8.7.8.4 0 .6-.2.8-.4l2.3-2.2 4.4 3.3c.8.4 1.4.2 1.6-.8l2.9-13.6c.3-1.1-.4-1.6-1.7-1.1zM8.7 13.7l8.7-5.5c.4-.3.8 0 .5.3l-7.4 6.7-.3 2.9-1.5-4.4z"/></svg>',
+        'email' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M4 7h16v10H4z"/><path fill="none" stroke="currentColor" stroke-width="1.8" d="M4 7l8 6 8-6"/></svg>',
+    ];
+    return $icons[$name] ?? '';
+}
+
+/**
+ * Copy-link + social composers (Facebook, X, LinkedIn, WhatsApp, Telegram, email).
+ * Each network link opens that platform's share sheet so the user only confirms.
+ */
+function renderShareBar(string $url, string $title, string $text = '', bool $compact = false): void
+{
+    $url = trim($url);
+    $title = trim($title);
+    if ($url === '' || $title === '') {
+        return;
+    }
+    $text = trim($text) !== '' ? trim($text) : $title;
+    $u = rawurlencode($url);
+    $t = rawurlencode($title);
+    $body = rawurlencode($title . "\n" . $url);
+    $wa = rawurlencode($title . ' ' . $url);
+    $class = 'share-bar' . ($compact ? ' share-bar-compact' : '');
+    $links = [
+        ['facebook', 'Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' . $u],
+        ['x', 'X', 'https://twitter.com/intent/tweet?url=' . $u . '&text=' . $t],
+        ['linkedin', 'LinkedIn', 'https://www.linkedin.com/sharing/share-offsite/?url=' . $u],
+        ['whatsapp', 'WhatsApp', 'https://api.whatsapp.com/send?text=' . $wa],
+        ['telegram', 'Telegram', 'https://t.me/share/url?url=' . $u . '&text=' . $t],
+        ['email', 'Email', 'mailto:?subject=' . $t . '&body=' . $body],
+    ];
+    echo '<div class="' . e($class) . '" data-share-url="' . e($url) . '" data-share-title="' . e($title) . '" data-share-text="' . e($text) . '">';
+    if (!$compact) {
+        echo '<p class="share-label">Share</p>';
+    }
+    echo '<div class="share-actions">';
+    echo '<button type="button" class="share-btn" data-copy-url title="Copy link">' . shareIcon('copy') . '<span>Copy link</span></button>';
+    echo '<button type="button" class="share-btn share-native" hidden title="Share">' . shareIcon('share') . '<span>Share</span></button>';
+    foreach ($links as [$key, $label, $href]) {
+        echo '<a class="share-btn" href="' . e($href) . '" target="_blank" rel="noopener noreferrer" title="Share on ' . e($label) . '">'
+            . shareIcon($key) . '<span>' . e($label) . '</span></a>';
+    }
+    echo '</div></div>';
 }
 
 function defaultLogoUrl(): string

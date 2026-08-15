@@ -59,6 +59,12 @@ function sitemapCollect(string $type): array
                 $add(articlePermalink($a['slug']), sitemapStamp($a['updated_at'] ?: $a['created_at']), 'weekly', '0.8');
             }
         }
+        if ($type === 'pages' || $type === 'all') {
+            $events = db()->query('SELECT id, created_at FROM events WHERE is_published = 1 ORDER BY sort_order ASC, id ASC')->fetchAll();
+            foreach ($events as $ev) {
+                $add(eventPermalink((int)$ev['id']), sitemapStamp($ev['created_at'] ?? null), 'monthly', '0.5');
+            }
+        }
         if ($type === 'topics' || $type === 'all') {
             $topics = db()->query(
                 "SELECT slug, updated_at, created_at FROM discussion_topics WHERE status = 'approved' ORDER BY created_at DESC"

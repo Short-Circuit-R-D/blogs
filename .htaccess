@@ -49,6 +49,9 @@ Options -Indexes
   # Pretty article URLs: /article/colour-rendering → article.php?slug=…
   RewriteRule ^article/([A-Za-z0-9_-]+)/?$ public/article.php?slug=$1 [L,QSA]
 
+  # Pretty event URLs: /event/12 → event.php?id=…
+  RewriteRule ^event/([0-9]+)/?$ public/event.php?id=$1 [L,QSA]
+
   # Pretty community topic URLs: /topic/some-slug → topic.php?slug=…
   RewriteRule ^topic/([A-Za-z0-9_-]+)/?$ public/topic.php?slug=$1 [L,QSA]
 
