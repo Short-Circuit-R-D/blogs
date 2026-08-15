@@ -110,37 +110,101 @@ function shareIcon(string $name): string
     return $icons[$name] ?? '';
 }
 
+function firstWords(string $text, int $limit = 100): string
+{
+    $text = trim(preg_replace('/\s+/u', ' ', strip_tags($text)));
+    if ($text === '') {
+        return '';
+    }
+    $words = preg_split('/\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    if (count($words) <= $limit) {
+        return implode(' ', $words);
+    }
+    return implode(' ', array_slice($words, 0, $limit)) . '…';
+}
+
+function shareSubscribeUrl(): string
+{
+    return publicSiteUrl('subscribe');
+}
+
+/**
+ * Attractive share copy: first 100 words of the intro, then a read + subscribe CTA.
+ * @return array{full:string,text:string,short:string,quote:string}
+ */
+function buildSharePost(string $title, string $intro, string $url, string $kind = 'article'): array
+{
+    $title = trim($title);
+    $snippet = firstWords($intro, 100);
+    $subscribe = shareSubscribeUrl();
+    if ($kind === 'event') {
+        $cta = 'See the booth photos and recap. For recommended ranges, standards, and design tools, read our lighting guides — then subscribe to the Short Circuit blog so new field notes land in your inbox.';
+    } else {
+        $cta = 'Want the recommended ranges, standards, and the rest of the science? Read the full article, then subscribe to the Short Circuit lighting blog — new guides, free.';
+    }
+    $blocks = array_values(array_filter([$title, $snippet, $cta]));
+    $text = implode("\n\n", $blocks);
+    $full = $text
+        . "\n\nRead it here: " . $url
+        . "\nSubscribe (free): " . $subscribe;
+    $shortBits = array_filter([$title, firstWords($intro !== '' ? $intro : $title, 20)]);
+    $short = implode(' — ', $shortBits)
+        . ' Read the full guide and subscribe to our lighting blog.';
+    $quote = implode("\n\n", array_filter([$snippet, $cta]));
+    return [
+        'full' => $full,
+        'text' => $text . "\n\nSubscribe (free): " . $subscribe,
+        'short' => $short,
+        'quote' => $quote !== '' ? $quote : $cta,
+    ];
+}
+
+function shareMetaDescription(string $intro, string $fallback = ''): string
+{
+    $base = firstWords($intro !== '' ? $intro : $fallback, 28);
+    if ($base === '') {
+        $base = 'Short Circuit Company lighting technical data';
+    }
+    $cta = ' Read the full guide, then subscribe to the Short Circuit lighting blog.';
+    $out = $base . $cta;
+    if (strlen($out) > 220) {
+        $out = firstWords($intro !== '' ? $intro : $fallback, 18) . $cta;
+    }
+    return $out;
+}
+
 /**
  * Copy-link + social composers (Facebook, X, LinkedIn, WhatsApp, Telegram, email).
  * Each network link opens that platform's share sheet so the user only confirms.
  */
-function renderShareBar(string $url, string $title, string $text = '', bool $compact = false): void
+function renderShareBar(string $url, string $title, string $intro = '', bool $compact = false, string $kind = 'article'): void
 {
     $url = trim($url);
     $title = trim($title);
     if ($url === '' || $title === '') {
         return;
     }
-    $text = trim($text) !== '' ? trim($text) : $title;
+    $post = buildSharePost($title, $intro, $url, $kind);
     $u = rawurlencode($url);
     $t = rawurlencode($title);
-    $body = rawurlencode($title . "\n" . $url);
-    $wa = rawurlencode($title . ' ' . $url);
+    $short = rawurlencode($post['short']);
+    $full = rawurlencode($post['full']);
+    $quote = rawurlencode($post['quote']);
     $class = 'share-bar' . ($compact ? ' share-bar-compact' : '');
     $links = [
-        ['facebook', 'Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' . $u],
-        ['x', 'X', 'https://twitter.com/intent/tweet?url=' . $u . '&text=' . $t],
-        ['linkedin', 'LinkedIn', 'https://www.linkedin.com/sharing/share-offsite/?url=' . $u],
-        ['whatsapp', 'WhatsApp', 'https://api.whatsapp.com/send?text=' . $wa],
-        ['telegram', 'Telegram', 'https://t.me/share/url?url=' . $u . '&text=' . $t],
-        ['email', 'Email', 'mailto:?subject=' . $t . '&body=' . $body],
+        ['facebook', 'Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' . $u . '&quote=' . $quote],
+        ['x', 'X', 'https://twitter.com/intent/tweet?url=' . $u . '&text=' . $short],
+        ['linkedin', 'LinkedIn', 'https://www.linkedin.com/shareArticle?mini=true&url=' . $u . '&title=' . $t . '&summary=' . $quote],
+        ['whatsapp', 'WhatsApp', 'https://api.whatsapp.com/send?text=' . $full],
+        ['telegram', 'Telegram', 'https://t.me/share/url?url=' . $u . '&text=' . rawurlencode($post['text'])],
+        ['email', 'Email', 'mailto:?subject=' . rawurlencode('Worth a read: ' . $title) . '&body=' . $full],
     ];
-    echo '<div class="' . e($class) . '" data-share-url="' . e($url) . '" data-share-title="' . e($title) . '" data-share-text="' . e($text) . '">';
+    echo '<div class="' . e($class) . '" data-share-url="' . e($url) . '" data-share-title="' . e($title) . '" data-share-text="' . e($post['text']) . '" data-share-full="' . e($post['full']) . '">';
     if (!$compact) {
         echo '<p class="share-label">Share</p>';
     }
     echo '<div class="share-actions">';
-    echo '<button type="button" class="share-btn" data-copy-url title="Copy link">' . shareIcon('copy') . '<span>Copy link</span></button>';
+    echo '<button type="button" class="share-btn" data-copy-url title="Copy post">' . shareIcon('copy') . '<span>Copy post</span></button>';
     echo '<button type="button" class="share-btn share-native" hidden title="Share">' . shareIcon('share') . '<span>Share</span></button>';
     foreach ($links as [$key, $label, $href]) {
         echo '<a class="share-btn" href="' . e($href) . '" target="_blank" rel="noopener noreferrer" title="Share on ' . e($label) . '">'

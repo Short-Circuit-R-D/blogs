@@ -259,7 +259,8 @@ document.addEventListener('click', (e) => {
   if (!copyBtn) return;
   const bar = copyBtn.closest('.share-bar');
   const url = (bar && bar.getAttribute('data-share-url')) || copyBtn.getAttribute('data-copy-url') || '';
-  if (!url) return;
+  const payload = (bar && bar.getAttribute('data-share-full')) || url;
+  if (!payload) return;
   const label = copyBtn.querySelector('span');
   const restore = label ? label.textContent : '';
   const done = () => {
@@ -269,15 +270,15 @@ document.addEventListener('click', (e) => {
     setTimeout(() => {
       copyBtn.classList.remove('is-copied');
       if (label) label.textContent = restore;
-      copyBtn.setAttribute('title', 'Copy link');
+      copyBtn.setAttribute('title', 'Copy post');
     }, 1600);
   };
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(done).catch(() => {
-      window.prompt('Copy this link', url);
+    navigator.clipboard.writeText(payload).then(done).catch(() => {
+      window.prompt('Copy this post', payload);
     });
   } else {
-    window.prompt('Copy this link', url);
+    window.prompt('Copy this post', payload);
   }
 });
 

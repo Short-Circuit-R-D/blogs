@@ -45,7 +45,7 @@ $comments = getArticleComments((int)$article['id']);
 require_once __DIR__ . '/../includes/seo.php';
 
 $pageTitle = $article['title'];
-$pageDescription = $article['excerpt'] ?: seoDefaultDescription();
+$pageDescription = shareMetaDescription((string)($article['intro'] ?? ''), (string)($article['excerpt'] ?? ''));
 $pageOgType = 'article';
 $pageCanonical = articlePermalink($article['slug']);
 $pageOgImage = !empty($article['image_url']) ? mediaAbsUrl($article['image_url']) : defaultOgImageUrl();
@@ -102,7 +102,7 @@ include __DIR__ . '/partials_header.php';
 <?php endif; ?>
 
 <div class="wrap section" style="border-top:none;">
-  <?php renderShareBar(articlePermalink($article['slug']), $article['title'], (string)$article['excerpt']); ?>
+  <?php renderShareBar(articlePermalink($article['slug']), $article['title'], (string)($article['intro'] ?? $article['excerpt'] ?? '')); ?>
 
   <p class="article-intro"><?= nl2br(e($article['intro'])) ?></p>
 

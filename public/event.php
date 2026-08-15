@@ -20,7 +20,7 @@ $images = $stmt->fetchAll();
 require_once __DIR__ . '/../includes/seo.php';
 
 $pageTitle = $event['name'] . ($event['year'] ? ' (' . $event['year'] . ')' : '');
-$pageDescription = $event['description'] ?: ('Short Circuit Company at ' . $event['name'] . '.');
+$pageDescription = shareMetaDescription((string)($event['description'] ?? ''), 'Short Circuit Company at ' . $event['name'] . '.');
 $pageCanonical = eventPermalink((int)$event['id']);
 $pageOgType = 'article';
 $pageOgImage = defaultOgImageUrl();
@@ -60,7 +60,7 @@ include __DIR__ . '/partials_header.php';
     <p class="sub" style="max-width:680px;"><?= e($event['description']) ?></p>
   <?php endif; ?>
 
-  <?php renderShareBar(eventPermalink((int)$event['id']), $event['name'], (string)($event['description'] ?? '')); ?>
+  <?php renderShareBar(eventPermalink((int)$event['id']), $event['name'], (string)($event['description'] ?? ''), false, 'event'); ?>
 
   <div class="event-gallery" style="margin-top:var(--space-lg);">
     <?php if ($images): foreach ($images as $img): ?>

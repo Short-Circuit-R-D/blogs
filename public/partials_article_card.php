@@ -16,6 +16,6 @@ $hasCover = !empty($a['image_url']);
     <h3><?= e($a['title']) ?></h3>
     <p><?= e($a['excerpt']) ?></p>
     <a class="read-more" href="<?= e(articleUrl($a['slug'])) ?>">Read More →</a>
-    <?php renderShareBar(articlePermalink($a['slug']), $a['title'], (string)($a['excerpt'] ?? ''), true); ?>
+    <?php renderShareBar(articlePermalink($a['slug']), $a['title'], (string)($a['intro'] ?? $a['excerpt'] ?? ''), true); ?>
   </div>
 </div>
