@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS articles (
   is_published TINYINT(1) NOT NULL DEFAULT 1,
   sort_order INT NOT NULL DEFAULT 0,
   notified_at DATETIME DEFAULT NULL,
+  view_count INT UNSIGNED NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FULLTEXT KEY ft_articles_search (title, excerpt, intro, tag)
@@ -215,8 +216,22 @@ CREATE TABLE IF NOT EXISTS events (
   year YEAR DEFAULT NULL,
   description VARCHAR(500) DEFAULT NULL,
   is_published TINYINT(1) NOT NULL DEFAULT 1,
+  view_count INT UNSIGNED NOT NULL DEFAULT 0,
   sort_order INT NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- One unique view per device cookie (guest or logged-in) per article/event.
+CREATE TABLE IF NOT EXISTS content_views (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  content_type VARCHAR(20) NOT NULL,
+  content_id INT UNSIGNED NOT NULL,
+  visitor_hash CHAR(64) NOT NULL,
+  user_id INT UNSIGNED DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_content_device (content_type, content_id, visitor_hash),
+  KEY idx_content_views_content (content_type, content_id),
+  KEY idx_content_views_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS event_images (

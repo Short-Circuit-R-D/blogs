@@ -16,7 +16,7 @@ include __DIR__ . '/partials_header.php';
 
 <table class="admin-table">
   <thead>
-    <tr><th>Order</th><th>Title</th><th>Tag</th><th>Slug</th><th>Published</th><th>Actions</th></tr>
+    <tr><th>Order</th><th>Title</th><th>Tag</th><th>Slug</th><th>Views</th><th>Published</th><th>Actions</th></tr>
   </thead>
   <tbody>
     <?php foreach ($articles as $a): ?>
@@ -25,6 +25,7 @@ include __DIR__ . '/partials_header.php';
       <td><?= e($a['title']) ?></td>
       <td><span class="pill"><?= e($a['tag']) ?></span></td>
       <td><code><?= e($a['slug']) ?></code></td>
+      <td><?= number_format((int)($a['view_count'] ?? 0)) ?></td>
       <td><?= $a['is_published'] ? '<span class="badge-ok">Live</span>' : '<span class="badge-off">Hidden</span>' ?></td>
       <td class="row-actions">
         <a href="article/<?= (int)$a['id'] ?>">Edit</a>

@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $full = UPLOAD_DIR . '/' . $row['image_path'];
             if (is_file($full)) @unlink($full);
         }
+        db()->prepare('DELETE FROM content_views WHERE content_type = ? AND content_id = ?')->execute(['event', $id]);
         db()->prepare('DELETE FROM events WHERE id = ?')->execute([$id]);
     }
 }

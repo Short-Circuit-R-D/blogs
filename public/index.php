@@ -146,7 +146,8 @@ include __DIR__ . '/partials_header.php';
           <h3><?= e($ev['name']) ?></h3>
           <?php if ($ev['year']): ?><p class="event-year"><?= e((string)$ev['year']) ?></p><?php endif; ?>
           <?php if ($ev['description']): ?><p><?= e($ev['description']) ?></p><?php endif; ?>
-          <?php renderShareBar(eventPermalink((int)$ev['id']), $ev['name'], (string)($ev['description'] ?? ''), true, 'event'); ?>
+          <div class="card-meta"><?php renderViewCount((int)($ev['view_count'] ?? 0), true); ?></div>
+          <?php renderShareBar(eventPermalink((int)$ev['id']), $ev['name'], (string)($ev['description'] ?? ''), true, 'event', (string)$ev['id']); ?>
           <a class="read-more" href="<?= e(eventUrl((int)$ev['id'])) ?>" style="margin:0 0 12px;">View event →</a>
           <div class="event-gallery">
             <?php if (!empty($eventImages[$ev['id']])): foreach ($eventImages[$ev['id']] as $img): ?>

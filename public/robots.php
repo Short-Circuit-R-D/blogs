@@ -20,6 +20,7 @@ echo "Disallow: /staff-login\n";
 echo "Disallow: /moderate\n";
 echo "Disallow: /topic_new\n";
 echo "Disallow: /unsubscribe\n";
+echo "Disallow: /share-email\n";
 echo "Disallow: /sc_security_log_printer.php\n\n";
 echo "Allow: /logo.svg\n";
 echo "Allow: /og-image.png\n";

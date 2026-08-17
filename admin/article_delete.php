@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($row) {
             mediaUnlinkLocal($row['image_url'] ?? null);
         }
+        db()->prepare('DELETE FROM content_views WHERE content_type = ? AND content_id = ?')->execute(['article', $id]);
         db()->prepare('DELETE FROM articles WHERE id = ?')->execute([$id]);
     }
 }

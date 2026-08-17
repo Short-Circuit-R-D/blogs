@@ -15,7 +15,8 @@ $hasCover = !empty($a['image_url']);
   <div class="card-body">
     <h3><?= e($a['title']) ?></h3>
     <p><?= e($a['excerpt']) ?></p>
+    <div class="card-meta"><?php renderViewCount((int)($a['view_count'] ?? 0), true); ?></div>
     <a class="read-more" href="<?= e(articleUrl($a['slug'])) ?>">Read More →</a>
-    <?php renderShareBar(articlePermalink($a['slug']), $a['title'], (string)($a['intro'] ?? $a['excerpt'] ?? ''), true); ?>
+    <?php renderShareBar(articlePermalink($a['slug']), $a['title'], (string)($a['intro'] ?? $a['excerpt'] ?? ''), true, 'article', (string)$a['slug']); ?>
   </div>
 </div>

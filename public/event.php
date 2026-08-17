@@ -17,6 +17,8 @@ $stmt = db()->prepare('SELECT * FROM event_images WHERE event_id = ? ORDER BY so
 $stmt->execute([$id]);
 $images = $stmt->fetchAll();
 
+$event['view_count'] = recordContentView('event', (int)$event['id']);
+
 require_once __DIR__ . '/../includes/seo.php';
 
 $pageTitle = $event['name'] . ($event['year'] ? ' (' . $event['year'] . ')' : '');
@@ -56,11 +58,12 @@ include __DIR__ . '/partials_header.php';
   <a class="back-btn" href="<?= e(appUrl()) ?>#events">← Back to events</a>
   <p class="eyebrow">Event<?= !empty($event['year']) ? ' — ' . e((string)$event['year']) : '' ?></p>
   <h1 class="headline" style="font-size:42px;"><?= e($event['name']) ?></h1>
+  <?php renderViewCount((int)$event['view_count']); ?>
   <?php if ($event['description']): ?>
     <p class="sub" style="max-width:680px;"><?= e($event['description']) ?></p>
   <?php endif; ?>
 
-  <?php renderShareBar(eventPermalink((int)$event['id']), $event['name'], (string)($event['description'] ?? ''), false, 'event'); ?>
+  <?php renderShareBar(eventPermalink((int)$event['id']), $event['name'], (string)($event['description'] ?? ''), false, 'event', (string)$event['id']); ?>
 
   <div class="event-gallery" style="margin-top:var(--space-lg);">
     <?php if ($images): foreach ($images as $img): ?>

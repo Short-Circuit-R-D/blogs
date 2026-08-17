@@ -21,7 +21,7 @@ include __DIR__ . '/partials_header.php';
 </div>
 
 <table class="admin-table">
-  <thead><tr><th>Order</th><th>Name</th><th>Year</th><th>Images</th><th>Published</th><th>Actions</th></tr></thead>
+  <thead><tr><th>Order</th><th>Name</th><th>Year</th><th>Images</th><th>Views</th><th>Published</th><th>Actions</th></tr></thead>
   <tbody>
     <?php foreach ($events as $ev): ?>
     <tr>
@@ -29,6 +29,7 @@ include __DIR__ . '/partials_header.php';
       <td><?= e($ev['name']) ?></td>
       <td><?= e((string)$ev['year']) ?></td>
       <td><?= (int)$ev['image_count'] ?></td>
+      <td><?= number_format((int)($ev['view_count'] ?? 0)) ?></td>
       <td><?= $ev['is_published'] ? '<span class="badge-ok">Live</span>' : '<span class="badge-off">Hidden</span>' ?></td>
       <td class="row-actions">
         <a href="event/<?= (int)$ev['id'] ?>">Edit</a>

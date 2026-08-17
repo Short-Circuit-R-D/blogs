@@ -995,6 +995,7 @@ function apiOpenApiComponents(): array
                             'notified_at' => $dt,
                             'created_at' => $dt,
                             'updated_at' => $dt,
+                            'view_count' => ['type' => 'integer', 'readOnly' => true, 'description' => 'Unique device views.'],
                             'ranges' => ['type' => 'array', 'items' => oasRef('ArticleRange')],
                             'comments' => ['type' => 'array', 'items' => oasRef('ArticleComment')],
                         ],
@@ -1078,6 +1079,7 @@ function apiOpenApiComponents(): array
                         'properties' => [
                             'id' => ['type' => 'integer'],
                             'created_at' => $dt,
+                            'view_count' => ['type' => 'integer', 'readOnly' => true, 'description' => 'Unique device views.'],
                             'images' => ['type' => 'array', 'items' => oasRef('EventImage')],
                         ],
                     ],

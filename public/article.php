@@ -42,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'comme
 }
 
 $comments = getArticleComments((int)$article['id']);
+$article['view_count'] = recordContentView('article', (int)$article['id']);
 require_once __DIR__ . '/../includes/seo.php';
 
 $pageTitle = $article['title'];
@@ -75,6 +76,11 @@ $pageJsonLd = [
         ],
         'articleSection' => $article['tag'] ?: 'Lighting',
         'inLanguage' => 'en',
+        'interactionStatistic' => [
+            '@type' => 'InteractionCounter',
+            'interactionType' => 'https://schema.org/ReadAction',
+            'userInteractionCount' => (int)$article['view_count'],
+        ],
     ],
 ];
 include __DIR__ . '/partials_header.php';
@@ -87,6 +93,7 @@ include __DIR__ . '/partials_header.php';
       <a class="back-btn back-btn-light" href="articles">← Back to all articles</a>
       <p class="eyebrow">Article — <?= e($article['tag']) ?></p>
       <h1 class="article-hero-title"><?= e($article['title']) ?></h1>
+      <?php renderViewCount((int)$article['view_count'], false, true); ?>
     </div>
   </div>
 </div>
@@ -96,13 +103,14 @@ include __DIR__ . '/partials_header.php';
     <a class="back-btn back-btn-light" href="articles">← Back to all articles</a>
     <p class="eyebrow">Article — <?= e($article['tag']) ?></p>
     <h1 class="article-hero-title"><?= e($article['title']) ?></h1>
+    <?php renderViewCount((int)$article['view_count'], false, true); ?>
     <span class="article-hero-glyph"><?= iconSvg($article['icon']) ?></span>
   </div>
 </div>
 <?php endif; ?>
 
 <div class="wrap section" style="border-top:none;">
-  <?php renderShareBar(articlePermalink($article['slug']), $article['title'], (string)($article['intro'] ?? $article['excerpt'] ?? '')); ?>
+  <?php renderShareBar(articlePermalink($article['slug']), $article['title'], (string)($article['intro'] ?? $article['excerpt'] ?? ''), false, 'article', (string)$article['slug']); ?>
 
   <p class="article-intro"><?= nl2br(e($article['intro'])) ?></p>
 

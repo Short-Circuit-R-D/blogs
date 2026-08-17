@@ -27,13 +27,16 @@ $isLocal = $host === 'localhost'
     || ($host === '' && stripos(__DIR__, 'xampp') !== false);
 
 if ($isLocal) {
-    define('DB_HOST', 'localhost');
+    // 127.0.0.1 (not "localhost") so PHP uses TCP and honours port 3307.
+    define('DB_HOST', '127.0.0.1');
+    define('DB_PORT', 3307);
     define('DB_NAME', 'tech_data');
     define('DB_USER', 'root');
     define('DB_PASS', '');
     define('DB_CHARSET', 'utf8mb4');
 } else {
     define('DB_HOST', 'localhost');
+    define('DB_PORT', 3306);
     define('DB_NAME', 'shorlrip_tech_data');
     define('DB_USER', 'shorlrip_abubakr');
     define('DB_PASS', 'luxsxaleai_abubakr');
@@ -99,7 +102,7 @@ function db(): PDO
 {
     static $pdo = null;
     if ($pdo === null) {
-        $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
+        $dsn = 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
         $pdo = new PDO($dsn, DB_USER, DB_PASS, [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

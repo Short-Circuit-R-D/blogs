@@ -173,11 +173,20 @@ function shareMetaDescription(string $intro, string $fallback = ''): string
     return $out;
 }
 
+function shareEmailPageUrl(string $kind, string $ref): string
+{
+    $ref = trim($ref);
+    if ($kind === 'event') {
+        return appUrl('share-email?type=event&id=' . rawurlencode($ref));
+    }
+    return appUrl('share-email?type=article&slug=' . rawurlencode($ref));
+}
+
 /**
  * Copy-link + social composers (Facebook, X, LinkedIn, WhatsApp, Telegram, email).
- * Each network link opens that platform's share sheet so the user only confirms.
+ * Email opens the branded HTML share form so the recipient gets the designed article, not a mailto draft.
  */
-function renderShareBar(string $url, string $title, string $intro = '', bool $compact = false, string $kind = 'article'): void
+function renderShareBar(string $url, string $title, string $intro = '', bool $compact = false, string $kind = 'article', string $ref = ''): void
 {
     $url = trim($url);
     $title = trim($title);
@@ -191,13 +200,14 @@ function renderShareBar(string $url, string $title, string $intro = '', bool $co
     $full = rawurlencode($post['full']);
     $quote = rawurlencode($post['quote']);
     $class = 'share-bar' . ($compact ? ' share-bar-compact' : '');
+    $emailHref = $ref !== '' ? shareEmailPageUrl($kind, $ref) : ('mailto:?subject=' . rawurlencode('Worth a read: ' . $title) . '&body=' . $full);
     $links = [
-        ['facebook', 'Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' . $u . '&quote=' . $quote],
-        ['x', 'X', 'https://twitter.com/intent/tweet?url=' . $u . '&text=' . $short],
-        ['linkedin', 'LinkedIn', 'https://www.linkedin.com/shareArticle?mini=true&url=' . $u . '&title=' . $t . '&summary=' . $quote],
-        ['whatsapp', 'WhatsApp', 'https://api.whatsapp.com/send?text=' . $full],
-        ['telegram', 'Telegram', 'https://t.me/share/url?url=' . $u . '&text=' . rawurlencode($post['text'])],
-        ['email', 'Email', 'mailto:?subject=' . rawurlencode('Worth a read: ' . $title) . '&body=' . $full],
+        ['facebook', 'Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' . $u . '&quote=' . $quote, true],
+        ['x', 'X', 'https://twitter.com/intent/tweet?url=' . $u . '&text=' . $short, true],
+        ['linkedin', 'LinkedIn', 'https://www.linkedin.com/shareArticle?mini=true&url=' . $u . '&title=' . $t . '&summary=' . $quote, true],
+        ['whatsapp', 'WhatsApp', 'https://api.whatsapp.com/send?text=' . $full, true],
+        ['telegram', 'Telegram', 'https://t.me/share/url?url=' . $u . '&text=' . rawurlencode($post['text']), true],
+        ['email', 'Email', $emailHref, $ref === ''],
     ];
     echo '<div class="' . e($class) . '" data-share-url="' . e($url) . '" data-share-title="' . e($title) . '" data-share-text="' . e($post['text']) . '" data-share-full="' . e($post['full']) . '">';
     if (!$compact) {
@@ -206,8 +216,9 @@ function renderShareBar(string $url, string $title, string $intro = '', bool $co
     echo '<div class="share-actions">';
     echo '<button type="button" class="share-btn" data-copy-url title="Copy post">' . shareIcon('copy') . '<span>Copy post</span></button>';
     echo '<button type="button" class="share-btn share-native" hidden title="Share">' . shareIcon('share') . '<span>Share</span></button>';
-    foreach ($links as [$key, $label, $href]) {
-        echo '<a class="share-btn" href="' . e($href) . '" target="_blank" rel="noopener noreferrer" title="Share on ' . e($label) . '">'
+    foreach ($links as [$key, $label, $href, $external]) {
+        $extra = $external ? ' target="_blank" rel="noopener noreferrer"' : '';
+        echo '<a class="share-btn" href="' . e($href) . '"' . $extra . ' title="Share on ' . e($label) . '">'
             . shareIcon($key) . '<span>' . e($label) . '</span></a>';
     }
     echo '</div></div>';
@@ -221,6 +232,155 @@ function defaultLogoUrl(): string
 function defaultOgImageUrl(): string
 {
     return publicSiteUrl('og-image.png');
+}
+
+/** Persistent first-party device id (guest or logged-in). Not the user account. */
+function visitorDeviceId(): string
+{
+    $existing = (string)($_COOKIE['sc_did'] ?? '');
+    if (preg_match('/^[a-f0-9]{64}$/', $existing)) {
+        return $existing;
+    }
+    try {
+        $token = bin2hex(random_bytes(32));
+    } catch (\Throwable $e) {
+        return '';
+    }
+    $root = appRootBase();
+    $path = $root === '' ? '/' : $root;
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443)
+        || strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    if (!headers_sent()) {
+        setcookie('sc_did', $token, [
+            'expires'  => time() + 60 * 60 * 24 * 400,
+            'path'     => $path,
+            'secure'   => $secure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+    $_COOKIE['sc_did'] = $token;
+    return $token;
+}
+
+function visitorDeviceHash(): string
+{
+    $id = visitorDeviceId();
+    if ($id === '') {
+        return '';
+    }
+    $pepper = defined('DB_NAME') ? DB_NAME : 'sc';
+    return hash('sha256', $id . '|sc_did|' . $pepper);
+}
+
+function isAutomatedViewClient(): bool
+{
+    $ua = strtolower(trim((string)($_SERVER['HTTP_USER_AGENT'] ?? '')));
+    if ($ua === '') {
+        return true;
+    }
+    $needles = [
+        'googlebot', 'bingbot', 'yandexbot', 'baiduspider', 'duckduckbot',
+        'slurp', 'facebookexternalhit', 'facebot', 'ia_archiver',
+        'discordbot', 'linkedinbot', 'slackbot', 'telegrambot', 'twitterbot',
+        'embedly', 'quora link preview', 'pinterestbot', 'vkshare', 'applebot',
+        'bingpreview', 'google-inspectiontool', 'googleother', 'bytespider',
+        'semrush', 'ahrefs', 'dotbot', 'petalbot', 'screaming frog',
+        'curl/', 'wget/', 'python-requests', 'httpclient', 'libwww', 'scrapy',
+        'crawler', 'spider',
+    ];
+    foreach ($needles as $n) {
+        if (str_contains($ua, $n)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function shouldRecordContentView(): bool
+{
+    if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? '')) !== 'GET') {
+        return false;
+    }
+    $dest = strtolower((string)($_SERVER['HTTP_SEC_FETCH_DEST'] ?? ''));
+    if ($dest !== '' && $dest !== 'document') {
+        return false;
+    }
+    $purpose = strtolower((string)($_SERVER['HTTP_SEC_PURPOSE'] ?? $_SERVER['HTTP_PURPOSE'] ?? ''));
+    if (str_contains($purpose, 'prefetch') || str_contains($purpose, 'prerender')) {
+        return false;
+    }
+    return !isAutomatedViewClient();
+}
+
+/**
+ * Record one unique device view and return the live total.
+ * Same device (cookie) never increments twice, with or without an account.
+ */
+function recordContentView(string $type, int $id): int
+{
+    $type = $type === 'event' ? 'event' : 'article';
+    $table = $type === 'event' ? 'events' : 'articles';
+    $pdo = db();
+    $readCount = static function () use ($pdo, $table, $id): int {
+        $stmt = $pdo->prepare("SELECT view_count FROM {$table} WHERE id = ?");
+        $stmt->execute([$id]);
+        return (int)$stmt->fetchColumn();
+    };
+
+    if ($id < 1) {
+        return 0;
+    }
+
+    try {
+        if (!shouldRecordContentView()) {
+            return $readCount();
+        }
+        $hash = visitorDeviceHash();
+        if ($hash === '') {
+            return $readCount();
+        }
+
+        $userId = null;
+        if (function_exists('currentUser')) {
+            $u = currentUser();
+            if (!empty($u['id'])) {
+                $userId = (int)$u['id'];
+            }
+        }
+
+        $ins = $pdo->prepare(
+            'INSERT IGNORE INTO content_views (content_type, content_id, visitor_hash, user_id) VALUES (?,?,?,?)'
+        );
+        $ins->execute([$type, $id, $hash, $userId]);
+        if ($ins->rowCount() === 1) {
+            $pdo->prepare("UPDATE {$table} SET view_count = view_count + 1 WHERE id = ?")->execute([$id]);
+        } elseif ($userId) {
+            $pdo->prepare(
+                'UPDATE content_views SET user_id = COALESCE(user_id, ?) WHERE content_type = ? AND content_id = ? AND visitor_hash = ?'
+            )->execute([$userId, $type, $id, $hash]);
+        }
+        return $readCount();
+    } catch (\Throwable $e) {
+        return 0;
+    }
+}
+
+function viewCountIcon(): string
+{
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+}
+
+function renderViewCount(?int $count, bool $compact = false, bool $light = false): void
+{
+    $n = max(0, (int)$count);
+    $label = $n === 1 ? 'view' : 'views';
+    $text = $compact ? number_format($n) : (number_format($n) . ' ' . $label);
+    $class = 'view-count' . ($compact ? ' view-count-compact' : '') . ($light ? ' view-count-light' : '');
+    echo '<span class="' . e($class) . '" title="' . e(number_format($n) . ' unique device ' . $label) . '">'
+        . viewCountIcon()
+        . '<span>' . e($text) . '</span></span>';
 }
 
 /**
@@ -286,6 +446,28 @@ function ensureFrontendSchema(): void
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 KEY idx_contact_created (created_at),
                 KEY idx_contact_read (is_read)
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+        );
+
+        $articleViews = $pdo->query("SHOW COLUMNS FROM articles LIKE 'view_count'")->fetch();
+        if (!$articleViews) {
+            $pdo->exec('ALTER TABLE articles ADD COLUMN view_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER notified_at');
+        }
+        $eventViews = $pdo->query("SHOW COLUMNS FROM events LIKE 'view_count'")->fetch();
+        if (!$eventViews) {
+            $pdo->exec('ALTER TABLE events ADD COLUMN view_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER is_published');
+        }
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS content_views (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                content_type VARCHAR(20) NOT NULL,
+                content_id INT UNSIGNED NOT NULL,
+                visitor_hash CHAR(64) NOT NULL,
+                user_id INT UNSIGNED DEFAULT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uniq_content_device (content_type, content_id, visitor_hash),
+                KEY idx_content_views_content (content_type, content_id),
+                KEY idx_content_views_user (user_id)
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
         );
 
@@ -979,6 +1161,187 @@ function renderPagination(string $basePath, array $baseParams, int $page, int $t
     $html .= $page < $totalPages ? '<a class="page-btn" href="' . $link($page + 1) . '">Next ›</a>' : '<span class="page-btn disabled">Next ›</span>';
     $html .= '</nav>';
     return $html;
+}
+
+function emailSectionLabel(string $text): string
+{
+    return '<p style="font-size:12px;font-weight:600;color:#eb1b26;margin:24px 0 8px;text-transform:uppercase;letter-spacing:.12em;">' . e($text) . '</p>';
+}
+
+function emailRichText(?string $text): string
+{
+    $text = trim((string)$text);
+    if ($text === '') {
+        return '';
+    }
+    return '<p style="margin:0 0 14px;">' . nl2br(e($text)) . '</p>';
+}
+
+function emailShareNoteHtml(string $fromName, string $note): string
+{
+    $fromName = trim($fromName);
+    $note = trim($note);
+    if ($fromName === '' && $note === '') {
+        return '';
+    }
+    $who = $fromName !== '' ? e($fromName) : 'A reader';
+    $html = '<div style="background:#faf7f7;border-left:3px solid #eb1b26;padding:12px 14px;margin:0 0 22px;">'
+        . '<p style="margin:0 0 6px;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.08em;">Shared with you</p>'
+        . '<p style="margin:0;">' . $who . ' thought you would find this useful.</p>';
+    if ($note !== '') {
+        $html .= '<p style="margin:10px 0 0;font-style:italic;color:#333;">“' . e($note) . '”</p>';
+    }
+    return $html . '</div>';
+}
+
+function emailRangesTableHtml(array $ranges): string
+{
+    if (!$ranges) {
+        return '';
+    }
+    $rows = '';
+    foreach ($ranges as $r) {
+        $rows .= '<tr>'
+            . '<td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top;">' . e($r['stage_label'] ?? '') . '</td>'
+            . '<td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top;">' . e($r['environment_label'] ?? '') . '</td>'
+            . '<td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top;font-weight:600;">' . e($r['range_text'] ?? '') . '</td>'
+            . '<td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top;color:#666;">' . e($r['notes'] ?? '') . '</td>'
+            . '</tr>';
+    }
+    return emailSectionLabel('Recommended Ranges')
+        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:13px;">'
+        . '<thead><tr style="text-align:left;color:#999;font-size:11px;text-transform:uppercase;">'
+        . '<th style="padding:6px 10px;border-bottom:1px solid #ddd;">Stage</th>'
+        . '<th style="padding:6px 10px;border-bottom:1px solid #ddd;">Environment</th>'
+        . '<th style="padding:6px 10px;border-bottom:1px solid #ddd;">Range</th>'
+        . '<th style="padding:6px 10px;border-bottom:1px solid #ddd;">Notes</th>'
+        . '</tr></thead><tbody>' . $rows . '</tbody></table>';
+}
+
+/**
+ * Designed HTML email matching the public article page: cover, intro, why,
+ * science, formula, ranges, then “To read more, visit” + permalink.
+ *
+ * @param array{from_name?:string,note?:string} $opts
+ * @return array{html:string,subject:string}
+ */
+function buildArticleShareEmail(array $article, array $ranges = [], array $opts = []): array
+{
+    require_once __DIR__ . '/mailer.php';
+    $url = articlePermalink((string)$article['slug']);
+    $subscribe = shareSubscribeUrl();
+    $fromName = (string)($opts['from_name'] ?? '');
+    $note = (string)($opts['note'] ?? '');
+
+    $body = emailShareNoteHtml($fromName, $note);
+    $body .= emailRichText($article['intro'] ?? '');
+
+    if (!empty($article['why_text'])) {
+        $body .= emailSectionLabel('Why it matters');
+        $body .= emailRichText($article['why_text']);
+    }
+
+    $sci = [
+        'Physical Mechanism'   => $article['physical_text'] ?? '',
+        'Physiological Impact' => $article['physio_text'] ?? '',
+        'Psychological Impact' => $article['psycho_text'] ?? '',
+    ];
+    $sciHtml = '';
+    foreach ($sci as $label => $text) {
+        if (trim((string)$text) === '') {
+            continue;
+        }
+        $sciHtml .= '<p style="margin:16px 0 4px;font-size:14px;font-weight:700;color:#111;">' . e($label) . '</p>'
+            . emailRichText($text);
+    }
+    if ($sciHtml !== '' || !empty($article['formula_text'])) {
+        $body .= emailSectionLabel('The Science');
+        if (!empty($article['formula_text'])) {
+            $body .= '<div style="background:#f5f5f5;border-left:3px solid #eb1b26;padding:12px 14px;margin:8px 0 16px;font-family:Consolas,Monaco,monospace;font-size:14px;">'
+                . e($article['formula_text']);
+            if (!empty($article['formula_note'])) {
+                $body .= '<div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#666;margin-top:8px;">' . e($article['formula_note']) . '</div>';
+            }
+            $body .= '</div>';
+        }
+        $body .= $sciHtml;
+    }
+
+    $body .= emailRangesTableHtml($ranges);
+
+    if (!empty($article['simulator_url'])) {
+        $simLabel = trim((string)($article['simulator_label'] ?? '')) ?: 'Open the full live simulator';
+        $body .= emailSectionLabel('Test it live');
+        $body .= '<p style="margin:0 0 8px;">See this parameter in action, across every stage and environment, in the interactive simulator.</p>';
+        $body .= emailButton((string)$article['simulator_url'], $simLabel);
+    }
+
+    $body .= emailReadMoreBlock($url, 'To read more, visit');
+    $body .= '<p style="margin:8px 0 0;font-size:13px;color:#666;">Want new lighting guides in your inbox?</p>';
+    $body .= emailButton($subscribe, 'Subscribe (free)');
+
+    $title = (string)$article['title'];
+    $preheader = firstWords((string)($article['intro'] ?? $article['excerpt'] ?? $title), 28);
+    $html = siteEmailLayout($title, $body, [
+        'preheader' => $preheader,
+        'hero'      => !empty($article['image_url']) ? mediaAbsUrl($article['image_url']) : '',
+        'hero_alt'  => $title,
+        'eyebrow'   => 'Article' . (!empty($article['tag']) ? ' — ' . $article['tag'] : ''),
+    ]);
+
+    $subject = $fromName !== '' ? ($fromName . ' shared: ' . $title) : $title;
+    return ['html' => $html, 'subject' => $subject];
+}
+
+/**
+ * Designed HTML email for an event recap: description, gallery, then visit link.
+ *
+ * @param array{from_name?:string,note?:string} $opts
+ * @return array{html:string,subject:string}
+ */
+function buildEventShareEmail(array $event, array $images = [], array $opts = []): array
+{
+    require_once __DIR__ . '/mailer.php';
+    $url = eventPermalink((int)$event['id']);
+    $subscribe = shareSubscribeUrl();
+    $fromName = (string)($opts['from_name'] ?? '');
+    $note = (string)($opts['note'] ?? '');
+    $title = (string)$event['name'];
+    $year = trim((string)($event['year'] ?? ''));
+
+    $body = emailShareNoteHtml($fromName, $note);
+    $body .= emailRichText($event['description'] ?? '');
+
+    $shown = 0;
+    foreach ($images as $i => $img) {
+        if ($i === 0) {
+            continue;
+        }
+        if ($shown >= 8) {
+            break;
+        }
+        $src = mediaAbsUrl($img['image_path'] ?? '');
+        if ($src === '') {
+            continue;
+        }
+        $alt = trim((string)($img['caption'] ?? '')) ?: $title;
+        $body .= '<img src="' . e($src) . '" alt="' . e($alt) . '" width="504" '
+            . 'style="width:100%;max-width:504px;height:auto;display:block;margin:0 0 12px;border:0;">';
+        $shown++;
+    }
+
+    $body .= emailReadMoreBlock($url, 'To read more, visit');
+    $body .= emailButton($subscribe, 'Subscribe (free)');
+
+    $html = siteEmailLayout($title, $body, [
+        'preheader' => firstWords((string)($event['description'] ?? $title), 28),
+        'hero'      => $images ? mediaAbsUrl($images[0]['image_path'] ?? '') : '',
+        'hero_alt'  => $title,
+        'eyebrow'   => 'Event' . ($year !== '' ? ' — ' . $year : ''),
+    ]);
+
+    $subject = $fromName !== '' ? ($fromName . ' shared: ' . $title) : $title;
+    return ['html' => $html, 'subject' => $subject];
 }
 
 /**

@@ -49,6 +49,18 @@ function siteEmailLayout(string $title, string $bodyHtml, array $opts = []): str
     $unsubHtml = $unsub !== ''
         ? '<p style="margin:10px 0 0;">If you no longer want these emails, <a href="' . e($unsub) . '" style="color:' . $id['color'] . ';">unsubscribe here</a>.</p>'
         : '';
+    $hero = trim((string)($opts['hero'] ?? ''));
+    $heroAlt = trim((string)($opts['hero_alt'] ?? $title));
+    $eyebrow = trim((string)($opts['eyebrow'] ?? ''));
+    $heroRow = $hero !== ''
+        ? '<tr><td style="padding:0;line-height:0;font-size:0;">'
+            . '<img src="' . e($hero) . '" alt="' . e($heroAlt) . '" width="560" '
+            . 'style="width:100%;max-width:560px;height:auto;display:block;border:0;">'
+            . '</td></tr>'
+        : '';
+    $eyebrowHtml = $eyebrow !== ''
+        ? '<p style="margin:0 0 8px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:' . $id['color'] . ';">' . e($eyebrow) . '</p>'
+        : '';
 
     return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
         . '<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -63,8 +75,10 @@ function siteEmailLayout(string $title, string $bodyHtml, array $opts = []): str
         . '<p style="margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:' . $id['color'] . ';">' . e($id['brand']) . '</p>'
         . '<p style="margin:4px 0 0;font-size:18px;font-weight:700;color:#ffffff;letter-spacing:.04em;">Lighting Standards</p>'
         . '</td></tr>'
+        . $heroRow
         . '<tr><td style="padding:28px 28px 8px;">'
-        . '<h1 style="font-size:20px;line-height:1.3;margin:0 0 16px;color:#111;">' . e($title) . '</h1>'
+        . $eyebrowHtml
+        . '<h1 style="font-size:22px;line-height:1.3;margin:0 0 16px;color:#111;">' . e($title) . '</h1>'
         . '<div style="font-size:14px;line-height:1.65;color:#333;">' . $bodyHtml . '</div>'
         . '</td></tr>'
         . '<tr><td style="padding:8px 28px 28px;font-size:12px;line-height:1.55;color:#888;border-top:1px solid #f0f0f0;">'
@@ -74,6 +88,20 @@ function siteEmailLayout(string $title, string $bodyHtml, array $opts = []): str
         . $unsubHtml
         . '</td></tr>'
         . '</table></td></tr></table></body></html>';
+}
+
+/** Branded “To read more, visit” block with a visible URL. */
+function emailReadMoreBlock(string $url, string $label = 'To read more, visit'): string
+{
+    $id = mailIdentity();
+    return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 8px;">'
+        . '<tr><td style="background:#111111;padding:20px 18px;">'
+        . '<p style="margin:0 0 10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:' . $id['color'] . ';">' . e($label) . '</p>'
+        . '<a href="' . e($url) . '" style="display:inline-block;background:' . $id['color'] . ';color:#ffffff;padding:12px 20px;'
+        . 'border-radius:4px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">Open the page</a>'
+        . '<p style="font-size:12px;color:#cccccc;word-break:break-all;margin:12px 0 0;">'
+        . '<a href="' . e($url) . '" style="color:#ffffff;text-decoration:underline;">' . e($url) . '</a></p>'
+        . '</td></tr></table>';
 }
 
 /**
